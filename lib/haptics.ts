@@ -95,11 +95,15 @@ class HapticEngine {
     }
     this.playSubBassThump(75, 16, 0.065, 0.55);
   }
+
+  heavy() {
+    this.impact();
+  }
 }
 
 export const haptics = new HapticEngine();
 
-export type HapticType = "light" | "medium" | "success" | "impact";
+export type HapticType = "light" | "medium" | "success" | "impact" | "heavy";
 
 export function triggerHaptic(type: HapticType = "light") {
   haptics[type]();

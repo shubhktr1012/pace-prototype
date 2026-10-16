@@ -76,13 +76,13 @@ export const useAppStore = create<AppState>((set) => ({
   setRunStatus: (runStatus) => set({ runStatus }),
 
   telemetry: {
-    distanceKm: 5.24,
+    distanceKm: 0.0,
     pace: "5:12",
-    durationSec: 1634, // 27:14
-    heartRate: 156,
+    durationSec: 0,
+    heartRate: 142,
     cadence: 168,
     elevationM: 42,
-    calories: 348,
+    calories: 0,
     watchSynced: true,
   },
   updateTelemetry: (partial) =>
