@@ -98,3 +98,9 @@ class HapticEngine {
 }
 
 export const haptics = new HapticEngine();
+
+export type HapticType = "light" | "medium" | "success" | "impact";
+
+export function triggerHaptic(type: HapticType = "light") {
+  haptics[type]();
+}

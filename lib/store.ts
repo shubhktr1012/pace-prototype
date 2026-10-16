@@ -124,3 +124,6 @@ export const useAppStore = create<AppState>((set) => ({
   simulationMultiplier: 1,
   setSimulationMultiplier: (simulationMultiplier) => set({ simulationMultiplier }),
 }));
+
+// Export alias for PACE components
+export const usePaceStore = useAppStore;

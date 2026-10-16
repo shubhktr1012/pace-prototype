@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useAppStore, PlatformType } from "@/lib/store";
-import { haptics } from "@/lib/haptics";
+import { motion } from "framer-motion";
+import { usePaceStore, PlatformType } from "@/lib/store";
+import { triggerHaptic } from "@/lib/haptics";
 import { DynamicIslandHUD } from "./DynamicIslandHUD";
 import { BottomNav } from "./BottomNav";
 import { Smartphone, CheckCircle2 } from "lucide-react";
@@ -13,7 +13,7 @@ interface DeviceShellProps {
 }
 
 export function DeviceShell({ children }: DeviceShellProps) {
-  const { platform, setPlatform } = useAppStore();
+  const { platform, setPlatform } = usePaceStore();
   const [scale, setScale] = useState(1);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
 
@@ -48,7 +48,7 @@ export function DeviceShell({ children }: DeviceShellProps) {
 
   const handlePlatformSwitch = (newPlatform: PlatformType) => {
     if (newPlatform !== platform) {
-      haptics.medium();
+      triggerHaptic("medium");
       setPlatform(newPlatform);
     }
   };
@@ -133,39 +133,46 @@ export function DeviceShell({ children }: DeviceShellProps) {
             }}
             className="relative flex items-center justify-center flex-shrink-0"
           >
-            {/* PHYSICAL HARDWARE BUTTONS (Desktop Mode Only) */}
+            {/* PHYSICAL HARDWARE BUTTONS & ANTENNA BREAKS (Desktop Mode Only) */}
             {!isMobileScreen && platform === "ios" && (
               <>
+                {/* Titanium RF Antenna Bands */}
+                <div className="absolute top-[68px] -left-[1px] w-[3px] h-[5px] bg-[#18181b]/80 z-20 pointer-events-none" />
+                <div className="absolute top-[68px] -right-[1px] w-[3px] h-[5px] bg-[#18181b]/80 z-20 pointer-events-none" />
+                <div className="absolute bottom-[68px] -left-[1px] w-[3px] h-[5px] bg-[#18181b]/80 z-20 pointer-events-none" />
+                <div className="absolute bottom-[68px] -right-[1px] w-[3px] h-[5px] bg-[#18181b]/80 z-20 pointer-events-none" />
+
+                {/* Left Hardware Buttons: Action + Volume Up/Down */}
                 {/* Action Button (Left Up 1) */}
                 <div
                   title="Action Button"
-                  className="absolute -left-[14px] top-[135px] w-[5px] h-[32px] bg-[#35363C] rounded-l-[3px] border-l border-t border-b border-white/20 shadow-[-2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                  className="absolute -left-[14px] top-[125px] w-[4px] h-[30px] bg-gradient-to-b from-[#4a4a50] via-[#27272a] to-[#4a4a50] rounded-l-md border-l border-white/20 shadow-[-2px_0_4px_rgba(0,0,0,0.8)] z-10"
                 />
 
                 {/* Volume Up Button (Left Up 2) */}
                 <div
                   title="Volume Up"
-                  className="absolute -left-[14px] top-[185px] w-[5px] h-[64px] bg-[#35363C] rounded-l-[3px] border-l border-t border-b border-white/20 shadow-[-2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                  className="absolute -left-[14px] top-[174px] w-[4px] h-[58px] bg-gradient-to-b from-[#4a4a50] via-[#27272a] to-[#4a4a50] rounded-l-md border-l border-white/20 shadow-[-2px_0_4px_rgba(0,0,0,0.8)] z-10"
                 />
 
                 {/* Volume Down Button (Left Down) */}
                 <div
                   title="Volume Down"
-                  className="absolute -left-[14px] top-[260px] w-[5px] h-[64px] bg-[#35363C] rounded-l-[3px] border-l border-t border-b border-white/20 shadow-[-2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                  className="absolute -left-[14px] top-[248px] w-[4px] h-[58px] bg-gradient-to-b from-[#4a4a50] via-[#27272a] to-[#4a4a50] rounded-l-md border-l border-white/20 shadow-[-2px_0_4px_rgba(0,0,0,0.8)] z-10"
                 />
 
-                {/* Power / Side Button (Right Power) */}
+                {/* Right Hardware Buttons: Power / Siri Button */}
                 <div
                   title="Power / Siri Button"
-                  className="absolute -right-[14px] top-[205px] w-[5px] h-[92px] bg-[#35363C] rounded-r-[3px] border-r border-t border-b border-white/20 shadow-[2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                  className="absolute -right-[14px] top-[195px] w-[4px] h-[86px] bg-gradient-to-b from-[#4a4a50] via-[#27272a] to-[#4a4a50] rounded-r-md border-r border-white/20 shadow-[2px_0_4px_rgba(0,0,0,0.8)] z-10"
                 />
 
-                {/* iPhone 16 Sapphire Glass Camera Control Button (Right Down) */}
+                {/* iPhone 16 Sapphire Glass Recessed Camera Control Button (Right Down) */}
                 <div
                   title="Camera Control Button (Capacitive & Force-sensitive)"
-                  className="absolute -right-[13px] top-[330px] w-[4px] h-[52px] bg-[#292A30] rounded-r-[2px] border-r border-t border-b border-white/15 shadow-[1px_0_3px_rgba(0,0,0,0.6)] opacity-95 z-10 flex items-center justify-center"
+                  className="absolute -right-[13px] top-[325px] w-[3px] h-[50px] bg-[#1f1f23] rounded-r-sm border-r border-white/15 opacity-90 z-10 flex items-center justify-center"
                 >
-                  <div className="w-[1px] h-[36px] bg-white/10 rounded-full" />
+                  <div className="w-[1px] h-[34px] bg-white/10 rounded-full" />
                 </div>
               </>
             )}
@@ -175,18 +182,18 @@ export function DeviceShell({ children }: DeviceShellProps) {
                 {/* Pixel 9 Pro Power Button (Right Top) */}
                 <div
                   title="Power Button"
-                  className="absolute -right-[13px] top-[180px] w-[5px] h-[44px] bg-[#2E3036] rounded-r-[3px] border-r border-t border-b border-white/20 shadow-[2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                  className="absolute -right-[13px] top-[180px] w-[4.5px] h-[44px] bg-gradient-to-b from-[#3c3e44] via-[#222327] to-[#3c3e44] rounded-r-md border-r border-white/20 shadow-[2px_0_5px_rgba(0,0,0,0.8)] z-10"
                 />
 
                 {/* Pixel 9 Pro Volume Rocker (Right Middle) */}
                 <div
                   title="Volume Rocker"
-                  className="absolute -right-[13px] top-[240px] w-[5px] h-[96px] bg-[#2E3036] rounded-r-[3px] border-r border-t border-b border-white/20 shadow-[2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                  className="absolute -right-[13px] top-[240px] w-[4.5px] h-[96px] bg-gradient-to-b from-[#3c3e44] via-[#222327] to-[#3c3e44] rounded-r-md border-r border-white/20 shadow-[2px_0_5px_rgba(0,0,0,0.8)] z-10"
                 />
               </>
             )}
 
-            {/* Main Phone Screen & Bezel */}
+            {/* Main Phone Screen & Bezel with Titanium Multi-Stop Finish */}
             <motion.div
               layout
               transition={{
@@ -198,28 +205,31 @@ export function DeviceShell({ children }: DeviceShellProps) {
                 isMobileScreen
                   ? "rounded-none border-none ring-0 shadow-none"
                   : platform === "ios"
-                  ? "rounded-[54px] ring-[10px] ring-[#1E2025] border-[3px] border-[#3E4048] shadow-[0_0_0_4px_#2B2C32,0_30px_70px_-15px_rgba(0,0,0,0.9),inset_0_0_12px_rgba(255,255,255,0.06)]"
-                  : "rounded-[42px] ring-[10px] ring-[#15161A] border-[2px] border-[#2C2D33] shadow-[0_0_0_3px_#23242A,0_30px_70px_-15px_rgba(0,0,0,0.9),inset_0_0_8px_rgba(255,255,255,0.04)]"
-              } bg-[#07080A]`}
+                  ? "rounded-[54px] p-[10px] bg-gradient-to-b from-[#3a3a3f] via-[#262629] to-[#333338] shadow-[0_0_0_1px_#52525b,0_0_0_4px_#18181b,0_30px_70px_-10px_rgba(0,0,0,0.9),inset_0_0_6px_rgba(255,255,255,0.2)]"
+                  : "rounded-[42px] p-[9px] bg-gradient-to-b from-[#2a2b30] via-[#1a1b1f] to-[#25262a] shadow-[0_0_0_1px_#3f414a,0_0_0_4px_#111215,0_30px_70px_-10px_rgba(0,0,0,0.9),inset_0_0_5px_rgba(255,255,255,0.12)]"
+              }`}
             >
-              {/* Status Bar & Dynamic Island */}
-              <DynamicIslandHUD />
+              {/* Inner Black OLED Bezel */}
+              <div className="relative w-full h-full bg-black rounded-[46px] overflow-hidden flex flex-col justify-between shadow-[inset_0_0_4px_rgba(0,0,0,1)]">
+                {/* Dynamic Island / Status Bar */}
+                <DynamicIslandHUD />
 
-              {/* Screen Content Viewport */}
-              <div className="flex-1 w-full relative overflow-y-auto overflow-x-hidden no-scrollbar pt-12 flex flex-col">
-                {children}
-              </div>
+                {/* Screen Content Viewport */}
+                <div className="flex-1 w-full relative overflow-y-auto overflow-x-hidden no-scrollbar pt-6 flex flex-col">
+                  {children}
+                </div>
 
-              {/* Adaptive Bottom Dock */}
-              <BottomNav />
+                {/* Adaptive Bottom Dock */}
+                <BottomNav />
 
-              {/* Native Home Indicator Pill */}
-              <div className="w-full pb-2 pt-1 flex justify-center bg-transparent pointer-events-none z-50">
-                {platform === "ios" ? (
-                  <div className="w-32 h-[4px] bg-white/40 rounded-full" />
-                ) : (
-                  <div className="w-20 h-[3px] bg-white/35 rounded-full" />
-                )}
+                {/* Native Home Indicator Pill */}
+                <div className="w-full pb-2 pt-1 flex justify-center bg-transparent pointer-events-none z-50">
+                  {platform === "ios" ? (
+                    <div className="w-32 h-[4px] bg-white/50 rounded-full shadow-sm" />
+                  ) : (
+                    <div className="w-20 h-[3px] bg-white/40 rounded-full" />
+                  )}
+                </div>
               </div>
             </motion.div>
           </div>
