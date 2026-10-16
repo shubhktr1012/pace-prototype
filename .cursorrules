@@ -1,0 +1,43 @@
+# PACE Prototype: Cursor AI Rules & Context Specification
+
+## Project Identity & High-Level Scope
+* Repository: PACE Interactive Web Prototype (Next.js 15, React 19, TypeScript, Tailwind CSS, Framer Motion, Zustand).
+* Value Proposition: Combining the GPS tracking and social proof of Strava with the adaptive coaching of Runna and an interactive AI running coach.
+* Primary Business Objective: Deliver an extraordinary mobile prototype to client Marco Izurieta on LinkedIn to secure the $450 USD Milestone 1 deposit (part of the agreed $1,800 total).
+
+## Client Profile & Psychology
+* Client: Marco Izurieta (Founder / Executive, US Eastern timezone).
+* Verification: Government ID verified on LinkedIn.
+* Personality: Highly visual, non-technical, busy ("I just want to see an app I do not have time for a call").
+* Key Requirement: The live URL must deliver immediate athletic conviction within the first 15 seconds on his mobile device.
+
+## Design System & Athletic Aesthetic
+* Benchmark: Nike Run Club Dark Mode, Apple Watch Ultra (watchOS 11), Strava Summit.
+* Core Colors:
+  * Volt Accent: #D4FF00
+  * Cyan Secondary: #00E5FF
+  * Infrared Alert / Heart: #FF3B30
+  * Obsidian Deep: #07080A, #0E1015, #13161F
+* Typography: Apple SF Pro Display and Text.
+* Numerals: Tabular numbers (metric-mono) with tabular-nums to prevent timer and pace jitter.
+* Layout Philosophy: Edge-to-edge full-bleed canvases, floating frosted glass telemetry pills, zero containeritis (no nested gray card overload).
+
+## Core Architecture & Existing Modules
+* Device Shell: components/shell/DeviceShell.tsx (Adaptive iPhone 16 Pro and Pixel 9 Pro titanium frame with desktop OS switcher, 100dvh full-bleed on mobile).
+* Status & Live Activity: components/shell/DynamicIslandHUD.tsx (3-state interactive Dynamic Island with sapphire optical lens rendering and live telemetry pill).
+* Navigation: components/shell/BottomNav.tsx (Apple HIG frosted glass dock with top specular glow).
+* Route Map: components/run/RunMapCanvas.tsx (High-DPI HTML5 Canvas rendering San Francisco Pacific Coastal Loop with glowing polyline and animated radar runner beacon).
+* Run Engine: components/run/useRunEngine.ts (Live timer ticks, dynamic pace drift, 20x speed simulation, confetti finish trigger).
+* Splits Drawer: components/run/SplitsDrawer.tsx (Vaul bottom sheet with elevation gain profile and kilometer splits).
+* Celebration Modal: components/run/FinishRunModal.tsx (Trophy emblem, 5K PR record badge, and Save to Feed action).
+* Coach PACE AI: components/coach/CoachChatView.tsx (Runna interval engine, animated strikethrough plan diff when tapping calf tightness, Apple Watch sync toast, conversational sports-science chat).
+* Social Club Feed: components/feed/CommunityFeedView.tsx (Marco Izurieta featured card, particle explosion Kudos button incrementing to 43, #1 Club leaderboard).
+* Performance Profile: components/profile/ProfileView.tsx (Weekly mileage circular ring at 71%, lifetime stats, personal records, gear odometer).
+* Haptics Engine: lib/haptics.ts (Android navigator.vibrate + iOS 45Hz Web Audio sub-bass thump).
+* Audio & Voice Engine: lib/audio.ts (Web Audio countdown and finish chimes + native Web Speech spoken voice coaching cues).
+* Master State: lib/store.ts (Zustand store with platform, activeTab, runStatus, telemetry, splits).
+
+## Strict Engineering & Copy Guidelines
+* Zero em dashes: Strictly avoid em dashes and en dashes in all copy, code, and communication (use commas, colons, or standard hyphens instead).
+* Zero AI slop: Avoid generic templates, placeholder brackets, and artificial filler phrases.
+* Mobile Safari First: Respect safe areas (env safe-area-inset), prevent rubber-banding overscroll, and optimize for 60 FPS animation.
