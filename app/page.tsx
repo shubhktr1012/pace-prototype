@@ -52,7 +52,7 @@ export default function HomePage() {
               className="flex-1 flex flex-col justify-between h-full relative"
             >
               {/* TOP SECTION: Full-Bleed High-DPI Vector Map Canvas */}
-              <div className="w-full h-[250px] relative flex-shrink-0">
+              <div className="w-full h-[220px] relative flex-shrink-0">
                 <RunMapCanvas />
 
                 {/* Floating Top Telemetry Badges */}

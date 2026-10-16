@@ -143,19 +143,16 @@ export function DeviceShell({ children }: DeviceShellProps) {
                 <div className="absolute bottom-[68px] -right-[1px] w-[3px] h-[5px] bg-[#18181b]/80 z-20 pointer-events-none" />
 
                 {/* Left Hardware Buttons: Action + Volume Up/Down */}
-                {/* Action Button (Left Up 1) */}
                 <div
                   title="Action Button"
                   className="absolute -left-[14px] top-[125px] w-[4px] h-[30px] bg-gradient-to-b from-[#4a4a50] via-[#27272a] to-[#4a4a50] rounded-l-md border-l border-white/20 shadow-[-2px_0_4px_rgba(0,0,0,0.8)] z-10"
                 />
 
-                {/* Volume Up Button (Left Up 2) */}
                 <div
                   title="Volume Up"
                   className="absolute -left-[14px] top-[174px] w-[4px] h-[58px] bg-gradient-to-b from-[#4a4a50] via-[#27272a] to-[#4a4a50] rounded-l-md border-l border-white/20 shadow-[-2px_0_4px_rgba(0,0,0,0.8)] z-10"
                 />
 
-                {/* Volume Down Button (Left Down) */}
                 <div
                   title="Volume Down"
                   className="absolute -left-[14px] top-[248px] w-[4px] h-[58px] bg-gradient-to-b from-[#4a4a50] via-[#27272a] to-[#4a4a50] rounded-l-md border-l border-white/20 shadow-[-2px_0_4px_rgba(0,0,0,0.8)] z-10"
@@ -209,8 +206,16 @@ export function DeviceShell({ children }: DeviceShellProps) {
                   : "rounded-[42px] p-[9px] bg-gradient-to-b from-[#2a2b30] via-[#1a1b1f] to-[#25262a] shadow-[0_0_0_1px_#3f414a,0_0_0_4px_#111215,0_30px_70px_-10px_rgba(0,0,0,0.9),inset_0_0_5px_rgba(255,255,255,0.12)]"
               }`}
             >
-              {/* Inner Black OLED Bezel */}
-              <div className="relative w-full h-full bg-black rounded-[46px] overflow-hidden flex flex-col justify-between shadow-[inset_0_0_4px_rgba(0,0,0,1)]">
+              {/* Inner Black OLED Bezel with Mask for strict radius clipping */}
+              <div
+                style={{
+                  WebkitMaskImage: isMobileScreen ? "none" : "-webkit-radial-gradient(white, black)",
+                  maskImage: isMobileScreen ? "none" : "radial-gradient(white, black)",
+                }}
+                className={`relative w-full h-full bg-black ${
+                  isMobileScreen ? "rounded-none" : "rounded-[46px]"
+                } overflow-hidden flex flex-col justify-between shadow-[inset_0_0_4px_rgba(0,0,0,1)]`}
+              >
                 {/* Dynamic Island / Status Bar */}
                 <DynamicIslandHUD />
 
@@ -219,15 +224,15 @@ export function DeviceShell({ children }: DeviceShellProps) {
                   {children}
                 </div>
 
-                {/* Adaptive Bottom Dock */}
+                {/* Adaptive Floating Bottom Dock */}
                 <BottomNav />
 
-                {/* Native Home Indicator Pill */}
-                <div className="w-full pb-2 pt-1 flex justify-center bg-transparent pointer-events-none z-50">
+                {/* Native Home Indicator Pill (Centered cleanly at bottom) */}
+                <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 pointer-events-none z-50 flex justify-center">
                   {platform === "ios" ? (
-                    <div className="w-32 h-[4px] bg-white/50 rounded-full shadow-sm" />
+                    <div className="w-32 h-[4px] bg-white/40 rounded-full shadow-sm" />
                   ) : (
-                    <div className="w-20 h-[3px] bg-white/40 rounded-full" />
+                    <div className="w-20 h-[3px] bg-white/35 rounded-full" />
                   )}
                 </div>
               </div>
