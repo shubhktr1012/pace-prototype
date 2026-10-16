@@ -1,32 +1,35 @@
-# React + TypeScript + Vite
+# PACE
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A browser preview of PACE, prepared for Marco Izurieta. Open it and tap through it. This is not an app from the App Store. The installable version comes after this preview.
 
-Currently, two official plugins are available:
+Live preview: https://pace-prototype-fawn.vercel.app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Open the preview
 
-## React Compiler
+Use a phone, held upright, in Safari or Chrome. If the link opens inside LinkedIn, use the menu and choose Open in browser.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Tap **Answer 3 questions**, pick any answers, then **Always Allow**, then **Simulate 5K**. Take the phone off silent to hear the countdown.
 
-## Expanding the Oxlint configuration
+**Continue as Marco** skips the three questions and goes straight to the location sheet. The answers do not change the plan. Either way, the preview opens Marco's half marathon week.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+The same address on a computer shows the phone. In a wide window, the rows beside it open Record, Coach, Club, and You. The switch in the corner flips the frame between iPhone 16 Pro and Pixel 9 Pro. On a real phone, the preview matches the phone he is holding.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+Onboarding is remembered for that browser tab. To see the welcome again, open You and tap **Reset onboarding** under Developer.
+
+## What is on the phone
+
+- **Record.** The Crissy Field map. Set the route, then tap Simulate 5K to watch the run.
+- **Coach.** Today's workout. Tap **My calves are tight** or **I only have 25 minutes** and the plan changes.
+- **Club.** Marco's run. Tap the heart to give kudos.
+- **You.** This week's miles, best times, shoes, and the miles or kilometers switch.
+
+On the iPhone frame, the black pill at the top is drawn by the preview. It is not the hardware Dynamic Island, and a website cannot control that. After the welcome it says **Tap the island**. Tap it for the run card. During a run it stays as a smaller pill with distance and pace. The Pixel frame has no island. A small distance and pace chip shows only while a run is on Record.
+
+## Run it locally
+
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open http://localhost:3000. There are no environment variables. `npm run build` is the production build. Pushing `main` updates the live preview.
