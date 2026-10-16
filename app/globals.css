@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --obsidian-base: #07080A;
+  --obsidian-surface: #0E1015;
+  --obsidian-card: #13161F;
+  --hairline-border: rgba(255, 255, 255, 0.08);
+  --volt: #D4FF00;
+  --infrared: #FF3B30;
+  --cyan: #00E5FF;
+}
+
+/* Anti-Web Native Mobile Resets */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #07080A;
+  color: #FFFFFF;
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular Numerals for High-Precision Telemetry (prevents timer jitter) */
+.metric-mono {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  letter-spacing: -0.04em;
+}
+
+/* Hide scrollbars completely while maintaining smooth touch scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glassmorphism Surface Tokens */
+.glass-panel-ios {
+  background: rgba(19, 22, 31, 0.72);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-android {
+  background: #0E1015;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Dynamic Island Specular Sheen */
+.dynamic-island-cutout {
+  background: #000000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Safe area padding utilities */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 47px);
+}
