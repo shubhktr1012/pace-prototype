@@ -145,7 +145,10 @@ export function DeviceShell({ children }: DeviceShellProps) {
           Track the run. Let the coach plan the next one.
         </p>
         <p className="mt-4 max-w-[26em] text-[15px] leading-6 text-white/55">
-          Prepared for Marco Izurieta. Everything on the phone works, or jump straight to a screen.
+          Prepared for Marco Izurieta.{" "}
+          {isOnboarded
+            ? "Tap a row and that screen opens on the phone."
+            : "Finish the welcome on the phone, then tap a row to open that screen."}
         </p>
 
         <ul className="mt-9 border-t border-white/[0.08]">
