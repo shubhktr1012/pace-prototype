@@ -39,7 +39,6 @@ export function OnboardingGate() {
   const { platform, isOnboarded, setIsOnboarded, setHasLocationPermission } = usePaceStore();
   const ios = platform === "ios";
   const radius = ios ? "rounded-full" : "rounded-2xl";
-  const [booted, setBooted] = useState(false);
   const [phase, setPhase] = useState<"welcome" | "questions" | "permission">("welcome");
   const [step, setStep] = useState(0);
   const [picks, setPicks] = useState<string[]>(["", "", ""]);
@@ -49,7 +48,6 @@ export function OnboardingGate() {
       setIsOnboarded(true);
       setHasLocationPermission(sessionStorage.getItem("pace-location") !== "denied");
     }
-    setBooted(true);
   }, [setHasLocationPermission, setIsOnboarded]);
 
   useEffect(() => {
@@ -69,7 +67,7 @@ export function OnboardingGate() {
     });
   }, [isOnboarded]);
 
-  if (!booted || isOnboarded) return null;
+  if (isOnboarded) return null;
 
   const finish = (allow: boolean) => {
     triggerHaptic(allow ? "medium" : "light");

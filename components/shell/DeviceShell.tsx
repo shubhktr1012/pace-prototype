@@ -2,21 +2,69 @@
 
 import React, { useEffect, useState } from "react";
 import { MotionConfig } from "framer-motion";
-import { usePaceStore, PlatformType } from "@/lib/store";
+import { usePaceStore, PlatformType, TabType } from "@/lib/store";
 import { triggerHaptic } from "@/lib/haptics";
 import { installAudioUnlock } from "@/lib/audio";
 import { DynamicIslandHUD } from "./DynamicIslandHUD";
 import { BottomNav } from "./BottomNav";
 import { OnboardingGate } from "@/components/onboarding/OnboardingFlow";
 import { ShellPortalProvider } from "./ShellPortal";
-import { Icon } from "@/components/icons/Icon";
+import { Icon, IconName } from "@/components/icons/Icon";
 
 interface DeviceShellProps {
   children: React.ReactNode;
 }
 
+const TOUR: { id: TabType; label: string; icon: IconName; hint: string }[] = [
+  { id: "run", label: "Record", icon: "shoe", hint: "The map of the run. Tap Simulate 5K to watch it play." },
+  { id: "coach", label: "Coach", icon: "chat", hint: "Today's workout. Tap My calves are tight and it changes." },
+  { id: "feed", label: "Club", icon: "club", hint: "Marco's run is first. Tap the heart to give kudos." },
+  { id: "profile", label: "You", icon: "medal", hint: "This week's miles, your best times, and your shoes." },
+];
+
+const DEVICES: { id: PlatformType; label: string }[] = [
+  { id: "ios", label: "iPhone 16 Pro" },
+  { id: "android", label: "Pixel 9 Pro" },
+];
+
+const FOCUS_RING =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt";
+
+function Wordmark() {
+  return <h1 className="text-[20px] font-black leading-none tracking-[-0.04em] text-white">PACE</h1>;
+}
+
+function DeviceSwitch({
+  platform,
+  onChange,
+}: {
+  platform: PlatformType;
+  onChange: (next: PlatformType) => void;
+}) {
+  return (
+    <div role="group" aria-label="Preview device" className="inline-flex rounded-[10px] border border-white/10 p-0.5">
+      {DEVICES.map((device) => {
+        const active = platform === device.id;
+        return (
+          <button
+            key={device.id}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(device.id)}
+            className={`h-8 rounded-lg px-3 text-[13px] font-medium transition-colors duration-150 ${FOCUS_RING} ${
+              active ? "bg-white/[0.12] text-white" : "text-white/50 hover:text-white/80"
+            }`}
+          >
+            {device.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function DeviceShell({ children }: DeviceShellProps) {
-  const { platform, setPlatform } = usePaceStore();
+  const { platform, setPlatform, activeTab, setActiveTab, isOnboarded } = usePaceStore();
   const [scale, setScale] = useState(1);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
   const [overlayEl, setOverlayEl] = useState<HTMLDivElement | null>(null);
@@ -46,10 +94,12 @@ export function DeviceShell({ children }: DeviceShellProps) {
         return;
       }
 
-      const chromeH = 128;
+      // Wide screens put the guide rail beside the phone, so the phone gets
+      // the full height. Mid widths keep a slim top bar and no rail.
       const sideButtons = 36;
-      const availableH = height - chromeH;
-      const availableW = width - 32;
+      const wide = width >= 1024;
+      const availableH = wide ? height - 56 : height - 88;
+      const availableW = wide ? width - (340 + 96 + 96) : width - 32;
       const scaleH = availableH / 860;
       const scaleW = availableW / (393 + sideButtons);
       const next = Math.min(1, scaleH, scaleW);
@@ -72,72 +122,77 @@ export function DeviceShell({ children }: DeviceShellProps) {
     }
   };
 
+  const jumpToTab = (tab: TabType) => {
+    if (!isOnboarded || tab === activeTab) return;
+    triggerHaptic("light");
+    setActiveTab(tab);
+  };
+
   return (
     <MotionConfig reducedMotion="user">
-    <div className="h-dvh w-full bg-[#07080A] text-white flex flex-col items-center justify-between relative overflow-hidden selection:bg-volt selection:text-black">
-      {/* Ambient Volt Backdrop Glow (Desktop only) */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden md:block">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] bg-[radial-gradient(ellipse_at_center,rgba(212,255,0,0.06)_0%,rgba(0,229,255,0.02)_40%,transparent_70%)] blur-3xl pointer-events-none" />
-        <div className="absolute -top-32 left-1/4 w-[420px] h-[420px] bg-volt/5 blur-[120px] rounded-full pointer-events-none" />
-      </div>
-
-      {/* Desktop Hardware Control Bar */}
-      <header className="w-full max-w-4xl pt-3 pb-1 px-6 hidden md:flex items-center justify-between z-30 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-xl bg-volt/10 border border-volt/30 flex items-center justify-center shadow-[0_0_15px_rgba(212,255,0,0.2)]">
-            <span className="text-volt font-black text-xs tracking-tighter">P</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-bold text-xs tracking-tight text-white">PACE</h1>
-              <span className="text-[9px] font-semibold tracking-wider uppercase px-2 py-0.2 rounded-full bg-volt/15 text-volt border border-volt/30">
-                PROTOTYPE V1
-              </span>
-            </div>
-            <p className="text-[10px] text-white/50 tracking-tight">
-              Prepared for Marco Izurieta · Strava + Runna + AI Coach
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Dual-OS Chameleon Switcher Pill */}
-          <div className="flex items-center gap-1.5 p-1 bg-[#13161F] rounded-full border border-white/10 shadow-2xl">
-          <button
-            onClick={() => handlePlatformSwitch("ios")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
-              platform === "ios"
-                ? "bg-white text-black shadow-lg"
-                : "text-white/60 hover:text-white"
-            }`}
-          >
-            <Icon name="phone" size={14} />
-            <span>iPhone 16 Pro</span>
-            {platform === "ios" && (
-              <span className="w-1.5 h-1.5 rounded-full bg-black/60" />
-            )}
-          </button>
-
-          <button
-            onClick={() => handlePlatformSwitch("android")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
-              platform === "android"
-                ? "bg-volt text-black shadow-lg shadow-volt/20"
-                : "text-white/60 hover:text-white"
-            }`}
-          >
-            <Icon name="phone" size={14} />
-            <span>Pixel 9 Pro</span>
-            {platform === "android" && (
-              <span className="w-1.5 h-1.5 rounded-full bg-black/60" />
-            )}
-          </button>
-          </div>
-        </div>
+    <div className="h-dvh w-full bg-[#07080A] md:bg-[#0E1015] text-white flex flex-col relative overflow-hidden selection:bg-volt selection:text-black">
+      {/* Slim top bar for mid-width windows, where the rail does not fit */}
+      <header className="hidden md:flex lg:hidden h-16 w-full flex-shrink-0 items-center justify-between px-8">
+        <Wordmark />
+        <DeviceSwitch platform={platform} onChange={handlePlatformSwitch} />
       </header>
 
+      <div className="flex min-h-0 w-full flex-1 items-center justify-center lg:gap-24">
+      {/* Guide rail (wide screens): what the product is, and a way to jump between screens */}
+      <aside className="hidden lg:flex w-[340px] flex-shrink-0 flex-col">
+        <Wordmark />
+        <p className="mt-9 max-w-[12em] text-[32px] font-semibold leading-[1.08] tracking-[-0.025em] text-white [text-wrap:balance]">
+          Track the run. Let the coach plan the next one.
+        </p>
+        <p className="mt-4 max-w-[26em] text-[15px] leading-6 text-white/55">
+          Prepared for Marco Izurieta. Everything on the phone works, or jump straight to a screen.
+        </p>
+
+        <ul className="mt-9 border-t border-white/[0.08]">
+          {TOUR.map((item) => {
+            const current = isOnboarded && activeTab === item.id;
+            return (
+              <li key={item.id} className="border-b border-white/[0.08]">
+                <button
+                  type="button"
+                  disabled={!isOnboarded}
+                  aria-current={current ? "true" : undefined}
+                  onClick={() => jumpToTab(item.id)}
+                  className={`group flex w-full items-start gap-3.5 py-3.5 text-left disabled:cursor-default ${FOCUS_RING}`}
+                >
+                  <span
+                    className={`mt-0.5 grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg transition-colors duration-150 ${
+                      current ? "bg-volt text-black" : "bg-white/[0.06] text-white/60 group-enabled:group-hover:text-white"
+                    }`}
+                  >
+                    <Icon name={item.icon} size={18} />
+                  </span>
+                  <span className="min-w-0">
+                    <span
+                      className={`block text-[15px] font-semibold leading-5 transition-colors duration-150 ${
+                        current ? "text-white" : "text-white/70 group-enabled:group-hover:text-white"
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                    <span className={`mt-0.5 block text-[13px] leading-5 ${current ? "text-white/65" : "text-white/50"}`}>
+                      {item.hint}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="mt-8 flex items-center gap-3">
+          <span className="text-[13px] text-white/50">Preview on</span>
+          <DeviceSwitch platform={platform} onChange={handlePlatformSwitch} />
+        </div>
+      </aside>
+
       {/* Main Hardware Chassis Container with Outer Scaling Wrapper */}
-      <main className="w-full flex items-center justify-center flex-1 overflow-hidden">
+      <main className="flex w-full items-center justify-center lg:w-auto">
         <div
           style={{
             width: isMobileScreen ? "100%" : `${(393 + 36) * scale}px`,
@@ -233,7 +288,7 @@ export function DeviceShell({ children }: DeviceShellProps) {
               >
                 <ShellPortalProvider value={overlayEl}>
                   <div className="absolute inset-0 z-0">
-                    {children}
+                    {isOnboarded ? children : null}
                   </div>
                   <DynamicIslandHUD />
                   <OnboardingGate />
@@ -254,19 +309,7 @@ export function DeviceShell({ children }: DeviceShellProps) {
           </div>
         </div>
       </main>
-
-      {/* Desktop Footer Specs */}
-      <footer className="w-full max-w-4xl py-2 px-6 hidden md:flex items-center justify-between text-[11px] text-white/40 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Icon name="check" size={14} className="text-volt" />
-          <span>Dual-OS Chameleon Shell Active · 60 FPS Spring Kinematics</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span>Viewport: 393 × 852 (100dvh on mobile)</span>
-          <span>·</span>
-          <span>Haptics: Web Audio & Native Vibrator</span>
-        </div>
-      </footer>
+      </div>
     </div>
     </MotionConfig>
   );
