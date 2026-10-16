@@ -6,51 +6,28 @@
  * via Web Audio API singleton so taps feel weighted and tactile.
  */
 
+import { runWithAudioContext } from "@/lib/audio";
+
 class HapticEngine {
-  private audioCtx: AudioContext | null = null;
-
-  private initAudio() {
-    if (typeof window === "undefined") return null;
-    if (!this.audioCtx) {
-      const AudioCtxClass =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioCtxClass) {
-        this.audioCtx = new AudioCtxClass();
-      }
-    }
-    if (this.audioCtx && this.audioCtx.state === "suspended") {
-      this.audioCtx.resume().catch(() => {});
-    }
-    return this.audioCtx;
-  }
-
   private playSubBassThump(freqStart = 58, freqEnd = 20, durationSec = 0.028, gainVal = 0.35) {
-    try {
-      const ctx = this.initAudio();
-      if (!ctx) return;
-
+    runWithAudioContext((ctx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
+      const now = ctx.currentTime;
 
       osc.type = "sine";
-      osc.frequency.setValueAtTime(freqStart, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        Math.max(freqEnd, 10),
-        ctx.currentTime + durationSec
-      );
+      osc.frequency.setValueAtTime(freqStart, now);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd, 10), now + durationSec);
 
-      gain.gain.setValueAtTime(gainVal, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationSec);
+      gain.gain.setValueAtTime(gainVal, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      osc.start();
-      osc.stop(ctx.currentTime + durationSec);
-    } catch {
-      // AudioContext unavailable or restricted by browser autoplay policy
-    }
+      osc.start(now);
+      osc.stop(now + durationSec);
+    });
   }
 
   // Light selection tap (tab change, button hover/tap)

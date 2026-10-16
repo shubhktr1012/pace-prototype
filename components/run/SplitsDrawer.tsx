@@ -2,153 +2,129 @@
 
 import React, { useState } from "react";
 import { Drawer } from "vaul";
-import { usePaceStore } from "@/lib/store";
+import { usePaceStore, type SplitData } from "@/lib/store";
+import { displaySplits, formatClimb, formatPace, paceSuffix, parsePace } from "@/lib/units";
 import { triggerHaptic } from "@/lib/haptics";
-import { ChevronUp, TrendingUp, Heart, Zap, Award } from "lucide-react";
+import { Icon } from "@/components/icons/Icon";
+import { useShellPortal } from "@/components/shell/ShellPortal";
 
 export function SplitsDrawer() {
   const [open, setOpen] = useState(false);
-  const { splits, telemetry } = usePaceStore();
-
-  const handleOpenChange = (newOpen: boolean) => {
-    triggerHaptic("light");
-    setOpen(newOpen);
-  };
+  const { splits, telemetry, platform, distanceUnit } = usePaceStore();
+  const portal = useShellPortal();
+  const sheetRadius = platform === "ios" ? "rounded-t-[28px]" : "rounded-t-2xl";
+  const shown = displaySplits(splits, distanceUnit);
+  const fastest = shown.reduce((best, split) => (parsePace(split.pace) < parsePace(best.pace) ? split : best), shown[0]);
+  const targetPace = formatPace("5:12", distanceUnit);
 
   return (
-    <Drawer.Root open={open} onOpenChange={handleOpenChange}>
+    <Drawer.Root
+      open={open}
+      onOpenChange={(next) => {
+        triggerHaptic("light");
+        setOpen(next);
+      }}
+    >
       <Drawer.Trigger asChild>
         <button
-          className="w-full py-2.5 px-4 rounded-2xl bg-[#13161F]/80 backdrop-blur-xl border border-white/10 flex items-center justify-between text-xs text-white/80 active:scale-[0.99] transition-all shadow-lg hover:border-volt/30"
-          aria-label="View kilometer splits and elevation"
+          data-no-press
+          className="w-full h-11 px-1 flex items-center justify-between text-left"
+          aria-label={
+            distanceUnit === "mi"
+              ? `View mile splits. Best mile ${fastest?.pace ?? targetPace} per mile`
+              : `View kilometer splits. Best kilometer ${fastest?.pace ?? targetPace} per kilometer`
+          }
         >
-          <div className="flex items-center gap-2">
-            <ChevronUp className="w-4 h-4 text-volt animate-bounce" />
-            <span className="font-bold tracking-tight text-white">Kilometer Splits & Elevation</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-volt bg-volt/10 px-2 py-0.5 rounded-full border border-volt/20">
-              5 Splits
-            </span>
-            <span className="text-[11px] text-white/40">Details</span>
-          </div>
+          <span className="text-[14px] font-medium text-white/85">
+            {distanceUnit === "mi" ? "Mile splits" : "Kilometer splits"}
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-[13px]">
+            <span className="text-white/45">Best</span>
+            <span className="metric-mono font-semibold text-white">{fastest?.pace ?? targetPace}</span>
+            <span className="text-white/45">{paceSuffix(distanceUnit)}</span>
+            <Icon name="chevronUp" size={16} className="ml-0.5 text-white/45" />
+          </span>
         </button>
       </Drawer.Trigger>
 
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
-        <Drawer.Content className="fixed bottom-0 inset-x-0 max-w-[393px] mx-auto z-50 bg-[#0E1015] border-t border-white/15 rounded-t-[32px] p-5 max-h-[85vh] flex flex-col focus:outline-none shadow-2xl">
-          {/* iOS Grabber Pill */}
-          <div className="w-12 h-1.5 bg-white/30 rounded-full mx-auto mb-4" />
+      <Drawer.Portal container={portal ?? undefined}>
+        <Drawer.Overlay className="absolute inset-0 bg-black/60 z-10 pointer-events-auto" />
+        <Drawer.Content
+          className={`absolute bottom-0 inset-x-0 z-20 bg-obsidian-sheet border-t border-white/10 ${sheetRadius} px-5 pt-3 pb-10 max-h-[82%] flex flex-col focus:outline-none pointer-events-auto`}
+        >
+          <div className="w-9 h-1 rounded-full bg-white/25 mx-auto mb-4" />
+          <p className="text-[11px] uppercase tracking-[0.14em] text-white/40">Pacific Coastal Loop</p>
+          <Drawer.Title className="text-[24px] font-semibold tracking-tight text-white">Splits</Drawer.Title>
+          <Drawer.Description className="text-[13px] text-white/45 mt-0.5">
+            Target {targetPace} {paceSuffix(distanceUnit)} · {formatClimb(telemetry.elevationM, distanceUnit)}
+          </Drawer.Description>
 
-          {/* Drawer Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
-            <div>
-              <Drawer.Title className="text-base font-black text-white tracking-tight">
-                Splits & Pace Distribution
-              </Drawer.Title>
-              <Drawer.Description className="text-xs text-white/50">
-                Pacific Coastal Loop · Target Pace 5:12 /km
-              </Drawer.Description>
-            </div>
-            <div className="flex items-center gap-1.5 bg-volt/15 border border-volt/30 px-2.5 py-1 rounded-full">
-              <Award className="w-3.5 h-3.5 text-volt" />
-              <span className="text-[10px] font-bold text-volt">Fastest: Km 5</span>
-            </div>
-          </div>
+          <Elevation splits={shown.map((split) => ({ elevationDiffM: split.elevationM }))} />
 
-          {/* Elevation Profile Mini Area */}
-          <div className="bg-[#13161F] border border-white/10 rounded-2xl p-3.5 mb-4">
-            <div className="flex items-center justify-between mb-2 text-xs">
-              <span className="text-white/60 font-medium flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-cyan" /> Total Elevation Gain
-              </span>
-              <span className="font-mono font-bold text-cyan">+{telemetry.elevationM} m</span>
-            </div>
-
-            {/* SVG Elevation Area Graph */}
-            <div className="h-14 w-full relative">
-              <svg className="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="elevGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#00E5FF" stopOpacity="0.35" />
-                    <stop offset="100%" stopColor="#00E5FF" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M 0 50 Q 50 42 100 24 T 200 36 T 300 18 L 300 60 L 0 60 Z"
-                  fill="url(#elevGrad)"
-                />
-                <path
-                  d="M 0 50 Q 50 42 100 24 T 200 36 T 300 18"
-                  fill="none"
-                  stroke="#00E5FF"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* Splits Table with Visual Bar Comparison */}
-          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 no-scrollbar">
-            {splits.map((split) => {
-              const paceSec = parseInt(split.pace.split(":")[0]) * 60 + parseInt(split.pace.split(":")[1]);
-              const targetSec = 5 * 60 + 12; // 5:12
-              const diffSec = paceSec - targetSec;
-              const isFaster = diffSec <= 0;
-
+          <div className="mt-2 flex-1 overflow-y-auto no-scrollbar">
+            {shown.map((split) => {
+              const diffSec = parsePace(split.pace) - parsePace(targetPace);
+              const faster = diffSec <= 0;
               return (
                 <div
-                  key={split.km}
-                  className="bg-[#13161F] border border-white/5 rounded-xl p-3 flex items-center justify-between hover:border-white/15 transition-all"
+                  key={split.index}
+                  className="flex items-center gap-3 py-2.5 border-b border-white/10 last:border-0"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center font-mono font-bold text-xs text-white/90">
-                      {split.km}
-                    </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-sm text-white">
-                          {split.pace}
-                        </span>
-                        <span className="text-[10px] text-white/40">/km</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] text-white/50">
-                        <span className="flex items-center gap-0.5">
-                          <Heart className="w-2.5 h-2.5 text-infrared" /> {split.heartRate} bpm
-                        </span>
-                        <span>·</span>
-                        <span>{split.elevationDiffM >= 0 ? `+${split.elevationDiffM}m` : `${split.elevationDiffM}m`}</span>
-                      </div>
-                    </div>
+                  <span className="w-14 text-[12px] text-white/45">
+                    {distanceUnit === "mi" ? "Mile" : "Km"} {split.index}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[20px] leading-none font-semibold metric-mono text-white">{split.pace}</p>
+                    <p className="mt-1 text-[12px] text-white/40">
+                      <span className="text-infrared metric-mono">{split.heartRate}</span>
+                      {` bpm · ${formatClimb(split.elevationM, distanceUnit)}`}
+                    </p>
                   </div>
-
-                  <div className="text-right">
-                    <span
-                      className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md ${
-                        isFaster
-                          ? "text-volt bg-volt/10"
-                          : "text-infrared bg-infrared/10"
-                      }`}
-                    >
-                      {isFaster ? `${diffSec}s` : `+${diffSec}s`}
-                    </span>
-                  </div>
+                  <span className={`text-[15px] font-semibold metric-mono ${faster ? "text-volt" : "text-infrared"}`}>
+                    {faster ? `${diffSec}s` : `+${diffSec}s`}
+                  </span>
                 </div>
               );
             })}
           </div>
 
-          {/* Close button */}
           <button
             onClick={() => setOpen(false)}
-            className="w-full mt-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 active:scale-95 text-xs font-bold text-white transition-all"
+            data-vaul-no-drag
+            className="mt-3 h-11 text-[15px] font-semibold text-white/60"
           >
             Done
           </button>
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
+  );
+}
+
+function Elevation({ splits }: { splits: Pick<SplitData, "elevationDiffM">[] }) {
+  const gain = splits.reduce<number[]>((acc, split) => {
+    const prev = acc.length ? acc[acc.length - 1] : 0;
+    acc.push(prev + split.elevationDiffM);
+    return acc;
+  }, []);
+  if (gain.length < 2) return null;
+
+  const min = Math.min(...gain);
+  const max = Math.max(...gain);
+  const span = Math.max(1, max - min);
+  const width = 300;
+  const height = 56;
+  const points = gain.map((value, index) => {
+    const x = (index / (gain.length - 1)) * width;
+    const y = height - 10 - ((value - min) / span) * (height - 20);
+    return `${x} ${y}`;
+  });
+  const line = `M ${points.join(" L ")}`;
+
+  return (
+    <svg className="mt-4 h-14 w-full text-volt" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden>
+      <path d={`${line} L ${width} ${height} L 0 ${height} Z`} className="fill-volt/10" />
+      <path d={line} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }

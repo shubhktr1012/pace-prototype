@@ -1,117 +1,104 @@
 "use client";
 
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Drawer } from "vaul";
 import { usePaceStore } from "@/lib/store";
 import { triggerHaptic } from "@/lib/haptics";
-import { Trophy, Award, CheckCircle, Share2, ArrowRight } from "lucide-react";
+import { useShellPortal } from "@/components/shell/ShellPortal";
+import { formatDistance, formatPace, unitLabel } from "@/lib/units";
+import { coveredLine, isClosedLoop } from "@/components/run/course";
+import { RouteTrack } from "@/components/run/RouteTrack";
 
 export function FinishRunModal() {
-  const { runStatus, resetRun, setActiveTab, telemetry } = usePaceStore();
+  const { runStatus, resetRun, setActiveTab, telemetry, platform, distanceUnit, routePlan, saveRun } = usePaceStore();
+  const portal = useShellPortal();
 
-  if (runStatus !== "FINISHED") return null;
+  if (runStatus !== "FINISHED" || !portal) return null;
 
-  const handleSaveToFeed = () => {
-    triggerHaptic("medium");
-    resetRun();
-    setActiveTab("feed");
-  };
+  const mins = Math.floor(telemetry.durationSec / 60);
+  const secs = telemetry.durationSec % 60;
+  const time = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  const radius = platform === "ios" ? "rounded-t-[28px]" : "rounded-t-2xl";
 
-  const handleDismiss = () => {
+  const dismiss = () => {
     triggerHaptic("light");
     resetRun();
   };
 
-  const formattedMins = Math.floor(telemetry.durationSec / 60);
-  const formattedSecs = telemetry.durationSec % 60;
-  const timeString = `${formattedMins.toString().padStart(2, "0")}:${formattedSecs.toString().padStart(2, "0")}`;
+  const track = coveredLine(routePlan, telemetry.distanceKm);
+  const loop = isClosedLoop(routePlan);
+
+  const save = () => {
+    triggerHaptic("medium");
+    saveRun({
+      distanceKm: telemetry.distanceKm,
+      durationSec: telemetry.durationSec,
+      pace: telemetry.pace,
+      loop,
+      line: track,
+    });
+    resetRun();
+    setActiveTab("feed");
+  };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/80 backdrop-blur-md">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          transition={{ type: "spring", stiffness: 400, damping: 28 }}
-          className="w-full max-w-sm bg-[#0E1015] border border-volt/40 rounded-3xl p-6 text-center shadow-[0_0_50px_rgba(212,255,0,0.25)] relative overflow-hidden"
+    <Drawer.Root
+      open
+      dismissible
+      onOpenChange={(next) => {
+        if (!next) dismiss();
+      }}
+    >
+      <Drawer.Portal container={portal}>
+        <Drawer.Overlay className="absolute inset-0 z-[60] bg-black/70" />
+        <Drawer.Content
+          className={`absolute inset-x-0 bottom-0 z-[61] outline-none ${radius} bg-obsidian-ink px-5 pt-3 pb-8`}
         >
-          {/* Subtle Ambient Radial Glow */}
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 bg-volt/15 blur-3xl pointer-events-none rounded-full" />
-
-          {/* Golden Trophy Emblem */}
-          <div className="w-16 h-16 rounded-3xl bg-volt/15 border border-volt/50 mx-auto flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(212,255,0,0.3)]">
-            <Trophy className="w-8 h-8 text-volt" />
-          </div>
-
-          <span className="text-[10px] font-bold tracking-widest text-volt uppercase px-3 py-1 rounded-full bg-volt/10 border border-volt/20">
-            WORKOUT COMPLETE
-          </span>
-
-          <h2 className="text-2xl font-black text-white mt-2 mb-1 tracking-tight">
-            Pacific Coastal Loop
+          <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-white/30" />
+          <p className="text-[11px] uppercase tracking-[0.14em] text-volt">Workout saved</p>
+          <RouteTrack line={track} className="mt-3 h-36 w-full" />
+          <h2 className="mt-3 text-[24px] font-semibold tracking-tight">
+            {loop ? "Pacific Coastal Loop" : "Crissy Field"}
           </h2>
-          <p className="text-xs text-white/50 mb-5">
-            San Francisco · Excellent pacing Marco!
+          <p className="text-[13px] text-white/45">
+            {loop
+              ? distanceUnit === "mi"
+                ? `Fastest 5K split, mile pace ${formatPace("5:06", "mi")}`
+                : "Fastest 5K split, kilometer 5 at 5:06"
+              : "Along the promenade"}
           </p>
 
-          {/* Hero Metrics Summary Grid */}
-          <div className="grid grid-cols-3 gap-2 bg-[#13161F] border border-white/10 rounded-2xl p-3.5 mb-4">
-            <div>
-              <span className="text-[9px] text-white/40 uppercase block mb-0.5">Distance</span>
-              <span className="text-base font-black metric-mono text-white">
-                {telemetry.distanceKm.toFixed(2)}
-              </span>
-              <span className="text-[9px] text-volt uppercase block font-bold">km</span>
-            </div>
-            <div>
-              <span className="text-[9px] text-white/40 uppercase block mb-0.5">Time</span>
-              <span className="text-base font-black metric-mono text-white">
-                {timeString}
-              </span>
-              <span className="text-[9px] text-white/40 uppercase block">mm:ss</span>
-            </div>
-            <div>
-              <span className="text-[9px] text-white/40 uppercase block mb-0.5">Avg Pace</span>
-              <span className="text-base font-black metric-mono text-volt">
-                {telemetry.pace}
-              </span>
-              <span className="text-[9px] text-white/40 uppercase block">/km</span>
-            </div>
+          <div className="mt-4 grid grid-cols-3">
+            <Cell k="Distance" v={`${formatDistance(telemetry.distanceKm, distanceUnit)} ${unitLabel(distanceUnit)}`} />
+            <Cell k="Time" v={time} />
+            <Cell k="Pace" v={formatPace(telemetry.pace, distanceUnit)} />
           </div>
 
-          {/* PR Achievement Badge */}
-          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-volt/10 border border-volt/30 mb-5 text-left">
-            <Award className="w-5 h-5 text-volt flex-shrink-0" />
-            <div>
-              <span className="text-xs font-bold text-white block">
-                Fastest 5K Split Personal Record!
-              </span>
-              <span className="text-[10px] text-volt">
-                5:06 /km on Kilometer 5
-              </span>
-            </div>
-          </div>
+          <button
+            onClick={save}
+            data-vaul-no-drag
+            className={`mt-5 h-12 w-full ${platform === "ios" ? "rounded-full" : "rounded-2xl"} bg-volt text-black text-[15px] font-semibold`}
+          >
+            Post to Club
+          </button>
+          <button
+            onClick={dismiss}
+            data-vaul-no-drag
+            className="mt-2 h-10 w-full text-[14px] text-white/50"
+          >
+            Done
+          </button>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
+}
 
-          {/* Action Buttons */}
-          <div className="space-y-2">
-            <button
-              onClick={handleSaveToFeed}
-              className="w-full py-3.5 rounded-2xl bg-volt text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-volt/25 hover:brightness-110 active:scale-95 transition-all"
-            >
-              <span>Save & Post to PACE Feed</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleDismiss}
-              className="w-full py-2.5 rounded-2xl text-xs text-white/60 hover:text-white transition-colors"
-            >
-              Done / Start Another Run
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+function Cell({ k, v }: { k: string; v: string }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.12em] text-white/35">{k}</p>
+      <p className="mt-0.5 text-[16px] font-semibold metric-mono">{v}</p>
+    </div>
   );
 }

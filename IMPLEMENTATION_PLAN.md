@@ -96,3 +96,13 @@ A unified technical and design specification combining the Dual-OS Chameleon She
 2. Spring Kinematics: Tab switching demonstrates smooth shared-layout transitions with zero layout shift.
 3. Dual-OS Parity: Toggling iOS 18 and Android 15 smoothly morphs hardware chassis, status bar, and bottom dock.
 4. Mobile Emulation: Verified at 393x852 (iPhone 16 Pro) and 412x915 (Pixel 9 Pro) with zero horizontal overflow.
+
+---
+
+## 5. Map route notes
+
+Noted 16 Oct 2026. Shipped the same day.
+
+* Landmark names on the Crissy Field map: Golden Gate Bridge, Fort Point, Warming Hut, Palace of Fine Arts, and Presidio Tunnel Tops. They are a hand-placed layer, because the framed zoom has no place names in the tile data.
+* Start, end, and an optional destination come from a route card above the map. The runner taps a slot, then the map, or drags the matching lettered pin, which snaps to the path. With no slot selected, a map tap leaves the route alone. The end can match the start, and clearing the destination returns the loop. Each point takes the nearest place name, and the card shows the route length.
+* A finished run draws the covered line as an SVG track on the finish sheet and on the Club card.

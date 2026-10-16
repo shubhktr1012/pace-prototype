@@ -13,7 +13,10 @@ const config: Config = {
         obsidian: {
           DEFAULT: "#07080A",
           surface: "#0E1015",
+          sheet: "#14171E",
           card: "#13161F",
+          ink: "#101216",
+          raised: "#1C2028",
           border: "rgba(255, 255, 255, 0.08)",
           subtle: "rgba(255, 255, 255, 0.04)",
         },

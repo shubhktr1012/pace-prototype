@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { MotionConfig } from "framer-motion";
 import { usePaceStore, PlatformType } from "@/lib/store";
 import { triggerHaptic } from "@/lib/haptics";
+import { installAudioUnlock } from "@/lib/audio";
 import { DynamicIslandHUD } from "./DynamicIslandHUD";
 import { BottomNav } from "./BottomNav";
-import { Smartphone, CheckCircle2 } from "lucide-react";
+import { OnboardingGate } from "@/components/onboarding/OnboardingFlow";
+import { ShellPortalProvider } from "./ShellPortal";
+import { Icon } from "@/components/icons/Icon";
 
 interface DeviceShellProps {
   children: React.ReactNode;
@@ -16,13 +19,20 @@ export function DeviceShell({ children }: DeviceShellProps) {
   const { platform, setPlatform } = usePaceStore();
   const [scale, setScale] = useState(1);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
+  const [overlayEl, setOverlayEl] = useState<HTMLDivElement | null>(null);
 
-  // Auto-detect mobile devices & calculate desktop auto-fit scale
+  useEffect(() => {
+    installAudioUnlock();
+  }, []);
+
+  // Full-bleed on a phone. On a laptop, fit the chassis and side buttons
+  // to the visible window instead of stopping at a scale floor that clips.
   useEffect(() => {
     const handleResize = () => {
-      if (typeof window === "undefined") return;
-
-      const isMobile = window.innerWidth < 768;
+      const viewport = window.visualViewport;
+      const width = viewport?.width ?? window.innerWidth;
+      const height = viewport?.height ?? window.innerHeight;
+      const isMobile = width < 768;
       setIsMobileScreen(isMobile);
 
       if (isMobile) {
@@ -33,17 +43,26 @@ export function DeviceShell({ children }: DeviceShellProps) {
         } else if (/Android/i.test(ua)) {
           setPlatform("android");
         }
-      } else {
-        // Desktop: fit 852px chassis + header + footer within window.innerHeight
-        const availableH = window.innerHeight - 120;
-        const computedScale = Math.min(1, Math.max(0.55, availableH / 870));
-        setScale(computedScale);
+        return;
       }
+
+      const chromeH = 128;
+      const sideButtons = 36;
+      const availableH = height - chromeH;
+      const availableW = width - 32;
+      const scaleH = availableH / 860;
+      const scaleW = availableW / (393 + sideButtons);
+      const next = Math.min(1, scaleH, scaleW);
+      setScale(Number.isFinite(next) ? Math.max(0.38, next) : 1);
     };
 
     handleResize();
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.visualViewport?.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.visualViewport?.removeEventListener("resize", handleResize);
+    };
   }, [setPlatform]);
 
   const handlePlatformSwitch = (newPlatform: PlatformType) => {
@@ -54,7 +73,8 @@ export function DeviceShell({ children }: DeviceShellProps) {
   };
 
   return (
-    <div className="h-screen w-full bg-[#07080A] text-white flex flex-col items-center justify-between relative overflow-hidden selection:bg-volt selection:text-black">
+    <MotionConfig reducedMotion="user">
+    <div className="h-dvh w-full bg-[#07080A] text-white flex flex-col items-center justify-between relative overflow-hidden selection:bg-volt selection:text-black">
       {/* Ambient Volt Backdrop Glow (Desktop only) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden hidden md:block">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] bg-[radial-gradient(ellipse_at_center,rgba(212,255,0,0.06)_0%,rgba(0,229,255,0.02)_40%,transparent_70%)] blur-3xl pointer-events-none" />
@@ -80,8 +100,9 @@ export function DeviceShell({ children }: DeviceShellProps) {
           </div>
         </div>
 
-        {/* Dual-OS Chameleon Switcher Pill */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#13161F] rounded-full border border-white/10 shadow-2xl">
+        <div className="flex items-center gap-2">
+          {/* Dual-OS Chameleon Switcher Pill */}
+          <div className="flex items-center gap-1.5 p-1 bg-[#13161F] rounded-full border border-white/10 shadow-2xl">
           <button
             onClick={() => handlePlatformSwitch("ios")}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
@@ -90,7 +111,7 @@ export function DeviceShell({ children }: DeviceShellProps) {
                 : "text-white/60 hover:text-white"
             }`}
           >
-            <Smartphone className="w-3.5 h-3.5" />
+            <Icon name="phone" size={14} />
             <span>iPhone 16 Pro</span>
             {platform === "ios" && (
               <span className="w-1.5 h-1.5 rounded-full bg-black/60" />
@@ -105,12 +126,13 @@ export function DeviceShell({ children }: DeviceShellProps) {
                 : "text-white/60 hover:text-white"
             }`}
           >
-            <Smartphone className="w-3.5 h-3.5" />
+            <Icon name="phone" size={14} />
             <span>Pixel 9 Pro</span>
             {platform === "android" && (
               <span className="w-1.5 h-1.5 rounded-full bg-black/60" />
             )}
           </button>
+          </div>
         </div>
       </header>
 
@@ -118,9 +140,8 @@ export function DeviceShell({ children }: DeviceShellProps) {
       <main className="w-full flex items-center justify-center flex-1 overflow-hidden">
         <div
           style={{
-            width: isMobileScreen ? "100%" : `${393 * scale}px`,
+            width: isMobileScreen ? "100%" : `${(393 + 36) * scale}px`,
             height: isMobileScreen ? "100dvh" : `${852 * scale}px`,
-            transition: "width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)",
           }}
           className="relative flex items-center justify-center flex-shrink-0"
         >
@@ -191,13 +212,7 @@ export function DeviceShell({ children }: DeviceShellProps) {
             )}
 
             {/* Main Phone Screen & Bezel with Titanium Multi-Stop Finish */}
-            <motion.div
-              layout
-              transition={{
-                type: "spring",
-                stiffness: 320,
-                damping: 32,
-              }}
+            <div
               className={`w-full h-full relative flex flex-col justify-between overflow-hidden select-none ${
                 isMobileScreen
                   ? "rounded-none border-none ring-0 shadow-none"
@@ -216,16 +231,15 @@ export function DeviceShell({ children }: DeviceShellProps) {
                   isMobileScreen ? "rounded-none" : "rounded-[46px]"
                 } overflow-hidden flex flex-col justify-between shadow-[inset_0_0_4px_rgba(0,0,0,1)]`}
               >
-                {/* Dynamic Island / Status Bar */}
-                <DynamicIslandHUD />
-
-                {/* Screen Content Viewport */}
-                <div className="flex-1 w-full relative overflow-y-auto overflow-x-hidden no-scrollbar pt-6 flex flex-col">
-                  {children}
-                </div>
-
-                {/* Adaptive Floating Bottom Dock */}
-                <BottomNav />
+                <ShellPortalProvider value={overlayEl}>
+                  <div className="absolute inset-0 z-0">
+                    {children}
+                  </div>
+                  <DynamicIslandHUD />
+                  <OnboardingGate />
+                  <BottomNav />
+                  <div ref={setOverlayEl} className="absolute inset-0 z-[45] pointer-events-none" />
+                </ShellPortalProvider>
 
                 {/* Native Home Indicator Pill (Centered cleanly at bottom) */}
                 <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 pointer-events-none z-50 flex justify-center">
@@ -236,7 +250,7 @@ export function DeviceShell({ children }: DeviceShellProps) {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </main>
@@ -244,7 +258,7 @@ export function DeviceShell({ children }: DeviceShellProps) {
       {/* Desktop Footer Specs */}
       <footer className="w-full max-w-4xl py-2 px-6 hidden md:flex items-center justify-between text-[11px] text-white/40 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-3.5 h-3.5 text-volt" />
+          <Icon name="check" size={14} className="text-volt" />
           <span>Dual-OS Chameleon Shell Active · 60 FPS Spring Kinematics</span>
         </div>
         <div className="flex items-center gap-3">
@@ -254,5 +268,6 @@ export function DeviceShell({ children }: DeviceShellProps) {
         </div>
       </footer>
     </div>
+    </MotionConfig>
   );
 }

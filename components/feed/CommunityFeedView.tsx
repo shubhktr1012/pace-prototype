@@ -1,193 +1,155 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import confetti from "canvas-confetti";
 import { triggerHaptic } from "@/lib/haptics";
 import { sound } from "@/lib/audio";
-import { Heart, Trophy, Flame, Share2, MessageCircle, MapPin, TrendingUp, CheckCircle } from "lucide-react";
+import { usePaceStore } from "@/lib/store";
+import { formatDistance, formatPace, unitLabel } from "@/lib/units";
+import { Icon } from "@/components/icons/Icon";
+import { DEFAULT_ROUTE, LOOP_FINISH_KM, coveredLine } from "@/components/run/course";
+import { RouteTrack } from "@/components/run/RouteTrack";
+
+const BOARD = [
+  { rank: "1", name: "Marco Izurieta", km: 48.6, you: true },
+  { rank: "2", name: "Sarah Jenkins", km: 42.1, you: false },
+  { rank: "3", name: "David Chen", km: 39.8, you: false },
+];
 
 export function CommunityFeedView() {
-  const [kudosCount, setKudosCount] = useState(42);
-  const [hasGivenKudos, setHasGivenKudos] = useState(false);
+  const { platform, distanceUnit, savedRun } = usePaceStore();
+  const ios = platform === "ios";
+  const track = useMemo(
+    () => savedRun?.line ?? coveredLine(DEFAULT_ROUTE, LOOP_FINISH_KM),
+    [savedRun],
+  );
+  const distanceKm = savedRun?.distanceKm ?? 14.2;
+  const pace = savedRun?.pace ?? "5:04";
+  const timeLabel = savedRun
+    ? `${Math.floor(savedRun.durationSec / 60).toString().padStart(2, "0")}:${(savedRun.durationSec % 60).toString().padStart(2, "0")}`
+    : "1:12:01";
+  const [kudos, setKudos] = useState(42);
+  const [given, setGiven] = useState(false);
 
-  const handleKudos = (e: React.MouseEvent<HTMLButtonElement>) => {
-    triggerHaptic("heavy");
-    sound.playBeep(880, 0.12, "sine");
-
-    if (!hasGivenKudos) {
-      setKudosCount((prev) => prev + 1);
-      setHasGivenKudos(true);
-
-      // Trigger celebratory micro-confetti burst from the button position
+  const toggleKudos = (e: React.MouseEvent<HTMLButtonElement>) => {
+    triggerHaptic("success");
+    sound.playBeep(880, 0.1);
+    if (!given) {
+      setKudos((n) => n + 1);
+      setGiven(true);
       const rect = e.currentTarget.getBoundingClientRect();
-      const x = (rect.left + rect.width / 2) / window.innerWidth;
-      const y = (rect.top + rect.height / 2) / window.innerHeight;
-
       try {
         confetti({
-          particleCount: 28,
-          spread: 60,
-          origin: { x, y },
-          colors: ["#D4FF00", "#00E5FF", "#FF3B30", "#FFFFFF"],
-          ticks: 120,
-          gravity: 1.2,
-          scalar: 0.8,
+          particleCount: 24,
+          spread: 50,
+          origin: {
+            x: (rect.left + rect.width / 2) / window.innerWidth,
+            y: (rect.top + rect.height / 2) / window.innerHeight,
+          },
+          colors: ["#D4FF00", "#FFFFFF"],
+          ticks: 90,
+          scalar: 0.7,
         });
       } catch {
-        // Fallback
+        // Confetti is optional.
       }
     } else {
-      setKudosCount((prev) => prev - 1);
-      setHasGivenKudos(false);
+      setKudos((n) => n - 1);
+      setGiven(false);
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-start space-y-4 overflow-y-auto no-scrollbar pb-3">
-      {/* Club Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-white/10">
-        <div>
-          <h2 className="font-bold text-sm text-white flex items-center gap-1.5">
-            PACE Global Run Club
-            <span className="w-2 h-2 rounded-full bg-volt" />
-          </h2>
-          <p className="text-[10px] text-white/50">
-            Leaderboard & Community Feed
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 bg-volt/10 border border-volt/30 px-2.5 py-1 rounded-full">
-          <Trophy className="w-3.5 h-3.5 text-volt" />
-          <span className="text-[10px] font-bold text-volt">#1 Club Rank</span>
-        </div>
-      </div>
+    <div className="flex flex-col gap-5">
+      <header>
+        <p className="text-[11px] uppercase tracking-[0.14em] text-white/40">PACE Global</p>
+        <h2 className={`font-semibold tracking-tight ${ios ? "text-[28px]" : "text-[22px]"}`}>Club</h2>
+      </header>
 
-      {/* Featured Athlete Card: Marco Izurieta */}
-      <div className="bg-[#13161F] border border-white/10 rounded-2xl p-4 shadow-xl">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-volt via-cyan to-white p-[1.5px]">
-              <div className="w-full h-full rounded-full bg-[#0E1015] flex items-center justify-center text-xs font-black text-white">
-                MI
-              </div>
-            </div>
-            <div>
-              <h4 className="font-bold text-xs text-white flex items-center gap-1.5">
-                Marco Izurieta
-                <span className="text-[9px] px-2 py-0.5 bg-volt/20 text-volt rounded-full font-bold border border-volt/30 uppercase">
-                  FOUNDER
-                </span>
-              </h4>
-              <p className="text-[10px] text-white/40 flex items-center gap-1">
-                <MapPin className="w-2.5 h-2.5 text-volt" /> San Francisco · Today at 6:42 AM
-              </p>
-            </div>
+      <article className={ios ? "" : "rounded-[24px] bg-obsidian-sheet p-4"}>
+        <div className="flex items-center gap-3">
+          <img
+            src="/media/marco.jpg"
+            alt=""
+            className={`w-10 h-10 object-cover object-[center_18%] ${ios ? "rounded-full" : "rounded-xl"}`}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-semibold leading-tight">Marco Izurieta</p>
+            <p className="text-[12px] text-white/40">Today · San Francisco</p>
           </div>
-          <div className="text-right">
-            <span className="text-sm font-black font-mono text-volt">14.2</span>
-            <span className="text-[10px] text-white/40 uppercase ml-0.5">km</span>
-          </div>
+          <span className="text-[11px] font-semibold text-volt">Founder</span>
         </div>
 
-        <p className="text-xs text-white/80 leading-relaxed mb-3">
-          "Pre-dawn coastal tempo. Coach PACE adapted intervals around mile 4 for calf recovery. Felt effortless and smooth into the headwind!"
+        <h3 className="mt-3 text-[17px] font-semibold tracking-tight">
+          {savedRun ? (savedRun.loop ? "Pacific Coastal Loop" : "Crissy Field") : "Morning coastal run"}
+        </h3>
+        <p className="mt-1 text-[13px] text-white/60 leading-relaxed">
+          {savedRun
+            ? "Out along the promenade. The headwind eased after the bridge."
+            : "Coach changed mile 4 because my calves were tight. Then it was smooth into the headwind."}
         </p>
 
-        {/* Mini Polyline Vector Preview */}
-        <div className="w-full h-24 bg-[#0A0C10] rounded-xl border border-white/5 relative overflow-hidden mb-3">
-          <svg className="w-full h-full" viewBox="0 0 300 90" fill="none">
-            <path
-              d="M 20 70 Q 70 20 140 50 T 220 30 T 280 20"
-              stroke="#D4FF00"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            <circle cx="280" cy="20" r="4" fill="#D4FF00" />
-          </svg>
-          <div className="absolute bottom-2 left-2.5 flex items-center gap-3 text-[10px] text-white/60 font-mono">
-            <span>Avg: 5:04 /km</span>
-            <span>·</span>
-            <span className="flex items-center gap-0.5 text-cyan">
-              <TrendingUp className="w-2.5 h-2.5" /> +68m
-            </span>
-          </div>
+        <div className={`mt-3 overflow-hidden bg-white/[0.03] ${ios ? "-mx-4" : "rounded-xl"}`}>
+          <RouteTrack line={track} className="h-44 w-full" />
+          <p className="px-4 pb-3 text-[12px] text-white/45">
+            {savedRun && !savedRun.loop ? "Point to point" : "Crissy Field to Fort Point"}
+          </p>
         </div>
 
-        {/* Card Social Metrics & Kudos Button */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
-          <div className="flex items-center gap-3 text-white/50 text-[11px]">
-            <span className="flex items-center gap-1">
-              <MessageCircle className="w-3.5 h-3.5" /> 8 comments
-            </span>
-            <span className="flex items-center gap-1">
-              <Share2 className="w-3.5 h-3.5" /> Share
-            </span>
-          </div>
+        <div className="mt-3 grid grid-cols-3">
+          <Stat k="Distance" v={`${formatDistance(distanceKm, distanceUnit, 1)} ${unitLabel(distanceUnit)}`} />
+          <Stat k="Pace" v={formatPace(pace, distanceUnit)} />
+          <Stat k="Time" v={timeLabel} />
+        </div>
 
+        <div className="mt-3 flex items-center gap-3">
           <button
-            onClick={handleKudos}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs transition-all active:scale-95 ${
-              hasGivenKudos
-                ? "bg-volt text-black shadow-[0_0_15px_rgba(212,255,0,0.4)]"
-                : "bg-white/10 text-white hover:bg-white/15"
-            }`}
+            onClick={toggleKudos}
+            className={`inline-flex items-center gap-1.5 min-h-11 ${ios ? "px-1" : "px-3 rounded-full bg-white/10"}`}
+            aria-pressed={given}
           >
-            <Heart
-              className={`w-3.5 h-3.5 ${
-                hasGivenKudos ? "fill-black" : "text-volt"
-              }`}
-            />
-            <span>{kudosCount} Kudos</span>
+            <Icon name="heart" size={20} filled={given} className={`transition-colors duration-150 ${given ? "text-volt" : "text-white/70"}`} />
+            <span className={`text-[15px] metric-mono transition-colors duration-150 ${given ? "text-volt" : "text-white/70"}`}>{kudos}</span>
           </button>
-        </div>
-      </div>
-
-      {/* PACE Global Run Club Weekly Leaderboard */}
-      <div className="bg-[#13161F] border border-white/10 rounded-2xl p-4 shadow-md">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider">
-            Weekly Mileage Leaderboard
+          <span className={`inline-flex items-center gap-1.5 text-[15px] text-white/45 ${ios ? "" : "px-3 min-h-11"}`}>
+            <Icon name="chat" size={18} />
+            8
           </span>
-          <span className="text-[10px] text-volt font-mono font-bold">Week 42</span>
         </div>
+      </article>
 
-        <div className="space-y-2">
-          {/* Rank 1: Marco */}
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-volt/10 border border-volt/30">
-            <div className="flex items-center gap-2.5">
-              <span className="w-5 h-5 rounded-full bg-volt text-black font-black text-[10px] flex items-center justify-center">
-                1
-              </span>
-              <div>
-                <span className="font-bold text-xs text-white">Marco Izurieta</span>
-                <span className="text-[9px] text-volt block">Top Performer</span>
-              </div>
-            </div>
-            <span className="font-mono font-black text-xs text-white">48.6 km</span>
-          </div>
-
-          {/* Rank 2 */}
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5">
-            <div className="flex items-center gap-2.5">
-              <span className="w-5 h-5 rounded-full bg-white/20 text-white font-bold text-[10px] flex items-center justify-center">
-                2
-              </span>
-              <span className="font-semibold text-xs text-white/80">Sarah Jenkins</span>
-            </div>
-            <span className="font-mono text-xs text-white/70">42.1 km</span>
-          </div>
-
-          {/* Rank 3 */}
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5">
-            <div className="flex items-center gap-2.5">
-              <span className="w-5 h-5 rounded-full bg-white/10 text-white/60 font-bold text-[10px] flex items-center justify-center">
-                3
-              </span>
-              <span className="font-semibold text-xs text-white/80">David Chen</span>
-            </div>
-            <span className="font-mono text-xs text-white/70">39.8 km</span>
-          </div>
+      <section className={ios ? "" : "rounded-[24px] bg-obsidian-sheet px-4 py-3"}>
+        <div className="flex items-baseline justify-between mb-1">
+          <h3 className="text-[15px] font-semibold">This week</h3>
+          <span className="text-[12px] text-white/40">Week 42</span>
         </div>
-      </div>
+        {BOARD.map((row) => (
+          <div key={row.rank} className="flex items-center gap-3 py-2.5 border-b border-white/10 last:border-0">
+            <span
+              className={`w-6 h-6 flex items-center justify-center text-[12px] metric-mono ${
+                ios ? "" : "rounded-md"
+              } ${row.you ? "text-volt" : "text-white/35"} ${!ios && row.you ? "bg-volt/15" : ""}`}
+            >
+              {row.rank}
+            </span>
+            <span className={`flex-1 text-[15px] ${row.you ? "font-semibold" : "text-white/80"}`}>
+              {row.name}
+            </span>
+            <span className="text-[13px] metric-mono text-white/70">
+              {formatDistance(row.km, distanceUnit, 1)} {unitLabel(distanceUnit)}
+            </span>
+          </div>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function Stat({ k, v }: { k: string; v: string }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.12em] text-white/35">{k}</p>
+      <p className="text-[15px] font-semibold metric-mono mt-0.5">{v}</p>
     </div>
   );
 }

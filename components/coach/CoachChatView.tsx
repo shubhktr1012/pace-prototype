@@ -1,325 +1,373 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { triggerHaptic } from "@/lib/haptics";
 import { sound } from "@/lib/audio";
-import {
-  Sparkles,
-  ArrowRight,
-  Send,
-  Watch,
-  CheckCircle,
-  Activity,
-  Flame,
-  ShieldAlert,
-  RotateCcw,
-} from "lucide-react";
+import { Icon } from "@/components/icons/Icon";
+import { usePaceStore } from "@/lib/store";
+import { formatDistance, formatPace, paceSuffix, unitLabel } from "@/lib/units";
+
+type Adaptation = "none" | "calves" | "short";
+type CoachLine = "opener" | "calves" | "short";
 
 interface Message {
   id: string;
   sender: "coach" | "user";
   text: string;
-  timestamp: string;
+  line?: CoachLine;
 }
 
+interface Step {
+  name: string;
+  detail: React.ReactNode;
+  accent?: "volt" | "cyan";
+}
+
+const coachLines: Record<CoachLine, string> = {
+  opener: "Today is a fast workout. Five short repeats.",
+  calves: "I took out the fast repeats. Today is an easy 35 minute run so your calves can recover.",
+  short: "I shortened today. Five minutes easy, fifteen steady, five walking. The fast repeats move to Thursday.",
+};
+
 export function CoachChatView() {
-  const [isAdapted, setIsAdapted] = useState(false);
-  const [showSyncToast, setShowSyncToast] = useState(false);
+  const { platform, distanceUnit } = usePaceStore();
+  const ios = platform === "ios";
+  const radius = ios ? "rounded-[22px]" : "rounded-2xl";
+  const chip = ios ? "rounded-full" : "rounded-lg";
+  const [adaptation, setAdaptation] = useState<Adaptation>("none");
+  const [showSync, setShowSync] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "m-1",
-      sender: "coach",
-      text: "Good morning Marco! Ready for your Week 4 Half Marathon session? Today was scheduled for 5x 800m threshold reps, but let me know how your legs feel after yesterday's coastal hills.",
-      timestamp: "6:40 AM",
-    },
+    { id: "m-1", sender: "coach", text: coachLines.opener, line: "opener" },
   ]);
 
-  const handleApplyAdaptation = (adaptationType: "calves" | "time" | "heat") => {
-    triggerHaptic("heavy");
+  // A chip tap changes the plan card in place, so the page stays put and the change is seen.
+  // Typing a message follows the thread instead.
+  const followThreadRef = useRef(false);
+
+  const apply = (next: Exclude<Adaptation, "none">) => {
+    triggerHaptic("success");
     sound.playBeep(440, 0.15, "triangle");
+    followThreadRef.current = false;
+    setAdaptation(next);
+    setShowSync(true);
 
-    if (adaptationType === "calves") {
-      setIsAdapted(true);
-      setShowSyncToast(true);
-
-      const userMsg: Message = {
-        id: `u-${Date.now()}`,
-        sender: "user",
-        text: "My calves feel tight after yesterday's hill reps.",
-        timestamp: "6:42 AM",
-      };
-
-      const coachMsg: Message = {
-        id: `c-${Date.now() + 1}`,
-        sender: "coach",
-        text: "Smart call Marco. High calf tightness after hill repeats indicates soleus overload. Forcing 4:55/km intervals today risks an Achilles flare-up. I have dynamically adapted today's session to a 35-minute Zone 2 active recovery flush at 6:05/km with light cadence focus (170+ SPM). Your updated workout targets are already synced to your Apple Watch Ultra.",
-        timestamp: "6:42 AM",
-      };
-
-      setMessages((prev) => [...prev, userMsg, coachMsg]);
-      sound.speak("Workout updated. 35 minute Zone 2 recovery flush synced to your watch.");
-
-      setTimeout(() => {
-        setShowSyncToast(false);
-      }, 3500);
-    }
+    const userText = next === "calves" ? "My calves are tight." : "I only have 25 minutes.";
+    setMessages((prev) => [
+      ...prev,
+      { id: `u-${Date.now()}`, sender: "user", text: userText },
+      { id: `c-${Date.now() + 1}`, sender: "coach", text: coachLines[next], line: next },
+    ]);
+    sound.speak(
+      next === "calves"
+        ? "Done. Today is an easy 35 minute run. It is on your watch."
+        : "Done. Today is a 25 minute run. It is on your watch."
+    );
+    window.setTimeout(() => setShowSync(false), 2800);
   };
 
-  const handleResetPlan = () => {
-    triggerHaptic("medium");
-    setIsAdapted(false);
-  };
-
-  const handleSendMessage = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!inputValue.trim()) return;
-
+  const restore = () => {
     triggerHaptic("light");
-    const userText = inputValue.trim();
-    setInputValue("");
-
-    const newMsg: Message = {
-      id: `u-${Date.now()}`,
-      sender: "user",
-      text: userText,
-      timestamp: "Just now",
-    };
-
-    setMessages((prev) => [...prev, newMsg]);
-
-    setTimeout(() => {
-      triggerHaptic("medium");
-      const replyText =
-        "Understood Marco! I have factored that into your weekly load profile. Your cadence and heart rate will be monitored live on your next run to ensure optimal aerobic development.";
-      const coachReply: Message = {
-        id: `c-${Date.now() + 1}`,
-        sender: "coach",
-        text: replyText,
-        timestamp: "Just now",
-      };
-      setMessages((prev) => [...prev, coachReply]);
-      sound.playBeep(659.25, 0.1);
-    }, 600);
+    setAdaptation("none");
   };
+
+  const send = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const text = inputValue.trim();
+    if (!text) return;
+    triggerHaptic("light");
+    followThreadRef.current = true;
+    setInputValue("");
+    setMessages((prev) => [...prev, { id: `u-${Date.now()}`, sender: "user", text }]);
+    window.setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `c-${Date.now()}`,
+          sender: "coach",
+          text: "Got it. Today's run stays as it is, and I will check how you feel next time.",
+        },
+      ]);
+      sound.playBeep(659.25, 0.1);
+    }, 500);
+  };
+
+  const pace = (pacePerKm: string, tone: "volt" | "cyan") => (
+    <span className={`metric-mono font-semibold ${tone === "volt" ? "text-volt" : "text-cyan"}`}>
+      {formatPace(pacePerKm, distanceUnit)} {paceSuffix(distanceUnit)}
+    </span>
+  );
+  const easyDistance = `${formatDistance(1, distanceUnit, 1)} ${unitLabel(distanceUnit)}`;
+  const repeatDistance = distanceUnit === "km" ? "800 meters" : "about half a mile";
+
+  const steps: Step[] =
+    adaptation === "calves"
+      ? [
+          { name: "Warm up", detail: "10 minutes easy." },
+          {
+            name: "Easy running",
+            detail: <>25 more minutes at {pace("6:05", "cyan")}. Short, quick steps.</>,
+            accent: "cyan",
+          },
+          { name: "Cool down", detail: "Walk until your calves loosen." },
+        ]
+      : adaptation === "short"
+        ? [
+            { name: "Warm up", detail: "5 minutes easy." },
+            { name: "Steady running", detail: <>15 minutes at {pace("5:40", "cyan")}.</>, accent: "cyan" },
+            { name: "Cool down", detail: "5 minutes walking." },
+          ]
+        : [
+            { name: "Warm up", detail: <>Easy for about <span className="metric-mono">{easyDistance}</span>.</> },
+            {
+              name: "The hard part",
+              detail: (
+                <>
+                  Run {repeatDistance}, five times, at {pace("4:55", "volt")}. Jog 90 seconds between them.
+                </>
+              ),
+              accent: "volt",
+            },
+            { name: "Cool down", detail: <>Easy again for about <span className="metric-mono">{easyDistance}</span>.</> },
+          ];
+
+  const summary =
+    adaptation === "calves"
+      ? "About 35 minutes. Keep your heart near 142."
+      : adaptation === "short"
+        ? "About 25 minutes. Keep your heart near 150."
+        : "About 45 minutes. Keep your heart near 168.";
+
+  const why =
+    adaptation === "calves"
+      ? "Easy running keeps the week on track without making the tightness worse."
+      : adaptation === "short"
+        ? "You still get a run in. The hard workout can wait."
+        : "This teaches you to hold a faster pace without sprinting.";
+
+  const week: [string, string, "done" | "today" | "plan" | "rest"][] = [
+    ["Mon", "", "done"],
+    ["Tue", "", "done"],
+    ["Wed", adaptation === "calves" ? "Easy" : adaptation === "short" ? "Short" : "Today", "today"],
+    ["Thu", "Fast", "plan"],
+    ["Fri", "Easy", "plan"],
+    ["Sat", "Long", "plan"],
+    ["Sun", "Rest", "rest"],
+  ];
+
+  const opener = messages[0];
+  const thread = messages.slice(1);
+  const threadEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (thread.length === 0 || !followThreadRef.current) return;
+    threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [thread.length]);
 
   return (
-    <div className="flex-1 flex flex-col justify-between h-full relative">
-      {/* Dynamic Watch Sync Toast */}
-      <AnimatePresence>
-        {showSyncToast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 450, damping: 30 }}
-            className="absolute top-2 inset-x-4 z-40 bg-[#00E5FF] text-black font-bold text-xs py-2 px-3.5 rounded-full flex items-center justify-between shadow-[0_10px_25px_rgba(0,229,255,0.4)]"
-          >
-            <div className="flex items-center gap-2">
-              <Watch className="w-4 h-4" />
-              <span>Synced to Apple Watch Ultra</span>
-            </div>
-            <CheckCircle className="w-4 h-4" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-3 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-volt/15 border border-volt/40 flex items-center justify-center shadow-[0_0_12px_rgba(212,255,0,0.25)]">
-              <Sparkles className="w-4 h-4 text-volt" />
-            </div>
-            <div>
-              <h2 className="font-bold text-sm text-white flex items-center gap-1.5">
-                Coach PACE AI
-                <span className="w-1.5 h-1.5 rounded-full bg-volt animate-pulse" />
-              </h2>
-              <p className="text-[10px] text-white/50">
-                Runna Adaptive Engine · Live Sync
-              </p>
-            </div>
-          </div>
-          <span className="text-[9px] font-bold text-volt bg-volt/10 border border-volt/20 px-2 py-0.5 rounded-full uppercase">
-            WEEK 4 OF 12
-          </span>
-        </div>
-
-        {/* Dynamic Prescription Workout Card */}
-        <motion.div
-          layout
-          transition={{ type: "spring", stiffness: 350, damping: 28 }}
-          className={`border rounded-2xl p-4 relative overflow-hidden transition-all ${
-            isAdapted
-              ? "bg-[#0A161E] border-cyan/40 shadow-[0_0_20px_rgba(0,229,255,0.15)]"
-              : "bg-[#13161F] border-white/10"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span
-              className={`text-[10px] font-bold uppercase tracking-wider ${
-                isAdapted ? "text-cyan" : "text-volt"
-              }`}
-            >
-              {isAdapted ? "Adapted Session · Low Strain" : "Scheduled Session · Day 3"}
-            </span>
-
-            {isAdapted ? (
-              <button
-                onClick={handleResetPlan}
-                className="text-[10px] text-white/50 hover:text-white flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-full"
-              >
-                <RotateCcw className="w-3 h-3" /> Revert
-              </button>
-            ) : (
-              <span className="text-[10px] text-white/40">Target Pace</span>
-            )}
-          </div>
-
-          {/* Workout Title with Theatrical Strikethrough Diff */}
-          <div className="relative mb-2">
-            {isAdapted ? (
-              <div>
-                <span className="text-xs text-white/40 line-through block">
-                  6.0 km Threshold (5x 800m @ 4:55/km)
-                </span>
-                <motion.h3
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="text-base font-black text-cyan flex items-center gap-2 mt-0.5"
-                >
-                  35m Zone 2 Active Flush
-                  <span className="text-[9px] font-bold bg-cyan/20 text-cyan px-2 py-0.5 rounded-full uppercase">
-                    ADAPTED
-                  </span>
-                </motion.h3>
-                <p className="text-[11px] text-white/70 mt-1">
-                  Target pace: 6:00 to 6:15/km. Cadence target: 170+ SPM. Protects calves.
-                </p>
-              </div>
-            ) : (
-              <div>
-                <h3 className="text-base font-black text-white">
-                  6.0 km Threshold Tempo
-                </h3>
-                <p className="text-[11px] text-white/60 mt-0.5">
-                  5x 800m repeats @ 4:55/km with 90s recovery. Aerobic power focus.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Interval breakdown columns */}
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/10 text-center">
-            <div>
-              <span className="text-[9px] text-white/40 uppercase block">Warmup</span>
-              <span className="text-xs font-bold text-white">
-                {isAdapted ? "1.0 km Easy" : "1.0 km Easy"}
-              </span>
-            </div>
-            <div>
-              <span className="text-[9px] text-white/40 uppercase block">Main Work</span>
-              <span
-                className={`text-xs font-bold ${
-                  isAdapted ? "text-cyan" : "text-volt"
-                }`}
-              >
-                {isAdapted ? "25m Zone 2" : "5x 800m @ 4:55"}
-              </span>
-            </div>
-            <div>
-              <span className="text-[9px] text-white/40 uppercase block">Cooldown</span>
-              <span className="text-xs font-bold text-white">
-                {isAdapted ? "Walk & Stretch" : "1.0 km Easy"}
-              </span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Quick Adaptation Interactive Trigger Chips */}
-        {!isAdapted && (
-          <div className="space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
-              One Tap Physiological Adaptations
-            </p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => handleApplyAdaptation("calves")}
-                className="w-full text-left p-3 rounded-xl bg-[#0E1015] border border-white/10 hover:border-volt/40 transition-all text-xs text-white/90 flex items-center justify-between active:scale-[0.98] group"
-              >
-                <div className="flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-infrared" />
-                  <span>"My calves feel tight from yesterday"</span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-volt group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <button
-                onClick={() => handleApplyAdaptation("calves")}
-                className="w-full text-left p-3 rounded-xl bg-[#0E1015] border border-white/10 hover:border-volt/40 transition-all text-xs text-white/90 flex items-center justify-between active:scale-[0.98] group"
-              >
-                <div className="flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-volt" />
-                  <span>"Short on time: cut session to 25 minutes"</span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-volt group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Chat Thread Messages */}
-        <div className="space-y-3 pt-2">
-          {messages.map((m) => (
+    <div className="relative flex flex-col gap-4">
+      {/* Zero-height anchor: the toast floats over the page and never pushes content. -mb-4 cancels the flex gap. */}
+      <div className="sticky top-0 z-10 -mb-4 h-0">
+        <AnimatePresence>
+          {showSync && (
             <motion.div
-              key={m.id}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex flex-col ${
-                m.sender === "user" ? "items-end" : "items-start"
-              }`}
+              exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
+              transition={{ type: "spring", stiffness: 420, damping: 32 }}
+              className="absolute inset-x-0 top-0 h-9 px-3 rounded-full bg-cyan text-black text-[12px] font-semibold flex items-center justify-between"
             >
-              <div
-                className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
-                  m.sender === "user"
-                    ? "bg-volt text-black font-medium rounded-tr-sm"
-                    : "bg-[#13161F] text-white/90 border border-white/10 rounded-tl-sm shadow-sm"
+              <span className="inline-flex items-center gap-1.5">
+                <Icon name="watch" size={14} />
+                On your Apple Watch
+              </span>
+              <Icon name="check" size={14} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <header className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-full bg-volt text-black text-[15px] font-semibold flex items-center justify-center">
+          P
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[20px] font-semibold tracking-tight leading-tight flex items-center gap-2">
+            Coach PACE
+            <span className="w-1.5 h-1.5 rounded-full bg-volt" />
+          </h2>
+          <p className="text-[12px] text-white/45">Wednesday · Week 4 of your half marathon</p>
+        </div>
+      </header>
+
+      {opener && (
+        <p className="text-[17px] leading-snug text-white">
+          {adaptation === "none" ? messageText(opener) : coachLines[adaptation]}
+        </p>
+      )}
+
+      <section className={`${radius} bg-obsidian-sheet px-4 py-4`}>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={adaptation}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: [0.23, 1, 0.32, 1] } }}
+            exit={{ opacity: 0, transition: { duration: 0.1 } }}
+          >
+            <p className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${adaptation === "none" ? "text-volt" : "text-cyan"}`}>
+              {adaptation === "none" ? "Today's run" : "Changed for today"}
+            </p>
+
+            {adaptation === "none" ? (
+              <h3 className="mt-2 text-[20px] font-semibold text-white tracking-tight">Fast workout</h3>
+            ) : (
+              <div className="mt-2">
+                <p className="relative inline-block text-[13px] text-white/35">
+                  Fast workout
+                  <motion.span
+                    aria-hidden
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ delay: 0.2, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                    className="absolute inset-x-0 top-1/2 h-px origin-left bg-white/45"
+                  />
+                </p>
+                <h3 className="text-[20px] font-semibold text-white tracking-tight">
+                  {adaptation === "calves" ? "Easy run" : "25 minute run"}
+                </h3>
+              </div>
+            )}
+
+            <ol className="mt-4 flex flex-col">
+              {steps.map((step, i) => (
+                <li key={step.name} className="relative flex gap-3 pb-4 last:pb-0">
+                  {i < steps.length - 1 && <span className="absolute left-3 top-7 bottom-1 w-px bg-white/10" />}
+                  <span
+                    className={`relative w-6 h-6 shrink-0 ${chip} text-[12px] font-semibold metric-mono flex items-center justify-center ${
+                      step.accent === "volt"
+                        ? "bg-volt text-black"
+                        : step.accent === "cyan"
+                          ? "bg-cyan text-black"
+                          : "bg-white/10 text-white"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 pt-0.5">
+                    <p className="text-[15px] font-semibold text-white leading-tight">{step.name}</p>
+                    <p className="mt-1 text-[13px] text-white/55 leading-snug">{step.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            <p className="mt-4 pt-3 border-t border-white/5 text-[13px] text-white/45">{summary}</p>
+          </motion.div>
+        </AnimatePresence>
+      </section>
+
+      <p className="text-[13px] text-white/55 leading-snug">{why}</p>
+
+      {adaptation === "none" ? (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-[15px] font-semibold text-white">Need a different run?</h3>
+          <button
+            onClick={() => apply("calves")}
+            className={`h-12 px-4 w-full flex items-center gap-3 text-left text-[15px] font-medium text-white bg-obsidian-sheet active:opacity-70 ${radius}`}
+          >
+            <Icon name="heart" size={16} className="text-infrared" />
+            My calves are tight
+          </button>
+          <button
+            onClick={() => apply("short")}
+            className={`h-12 px-4 w-full flex items-center gap-3 text-left text-[15px] font-medium text-white bg-obsidian-sheet active:opacity-70 ${radius}`}
+          >
+            <Icon name="clock" size={16} className="text-cyan" />
+            I only have 25 minutes
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={restore}
+          className={`h-12 px-4 w-full flex items-center gap-3 text-left text-[15px] font-medium text-white bg-obsidian-sheet active:opacity-70 ${radius}`}
+        >
+          <Icon name="reset" size={16} className="text-volt" />
+          Back to the fast workout
+        </button>
+      )}
+
+      <div>
+        <h3 className="text-[15px] font-semibold text-white">This week</h3>
+        <div className="mt-2 grid grid-cols-7 gap-1">
+          {week.map(([day, word, state]) => (
+            <div key={day} className="flex flex-col items-center gap-1">
+              <span className={`text-[10px] ${state === "today" ? "text-white" : "text-white/35"}`}>{day}</span>
+              <span
+                className={`w-full h-8 flex items-center justify-center text-[11px] font-semibold transition-colors duration-200 ${chip} ${
+                  state === "today"
+                    ? adaptation === "none"
+                      ? "bg-volt text-black"
+                      : "bg-cyan text-black"
+                    : state === "done"
+                      ? "bg-white/10 text-volt"
+                      : state === "plan"
+                        ? "bg-white/10 text-white/80"
+                        : "bg-white/5 text-white/35"
                 }`}
               >
-                {m.text}
-              </div>
-              <span className="text-[9px] text-white/30 px-1 mt-1">
-                {m.timestamp}
+                {state === "done" ? <Icon name="check" size={12} /> : word}
               </span>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Chat Input Bar */}
-      <form
-        onSubmit={handleSendMessage}
-        className="pt-2 pb-1 flex items-center gap-2"
-      >
-        <div className="flex-1 bg-[#13161F] border border-white/10 rounded-2xl px-3.5 py-2.5 flex items-center focus-within:border-volt/50 transition-colors">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask Coach PACE about recovery, pacing, shoes..."
-            className="w-full bg-transparent text-xs text-white placeholder-white/40 focus:outline-none"
-          />
+      {thread.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          {thread.map((m) => (
+            <motion.div
+              key={m.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <p
+                className={`max-w-[88%] px-3.5 py-2.5 text-[13px] leading-relaxed ${
+                  m.sender === "user"
+                    ? "bg-volt text-black rounded-2xl rounded-br-md"
+                    : "bg-obsidian-raised text-white/90 rounded-2xl rounded-bl-md"
+                }`}
+              >
+                {messageText(m)}
+              </p>
+            </motion.div>
+          ))}
+          <div ref={threadEndRef} />
         </div>
+      )}
+
+      <form onSubmit={send} className="flex items-center gap-2">
+        <input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="Or tell the coach in your own words"
+          className={`flex-1 min-w-0 h-11 px-4 bg-obsidian-raised text-[16px] text-white placeholder:text-white/35 outline-none ${radius}`}
+        />
         <button
           type="submit"
+          aria-label="Send"
           disabled={!inputValue.trim()}
-          className="w-10 h-10 rounded-2xl bg-volt disabled:opacity-40 flex items-center justify-center text-black font-bold active:scale-95 transition-all shadow-md shadow-volt/20"
+          className={`h-11 w-11 shrink-0 ${radius} bg-volt text-black flex items-center justify-center disabled:opacity-30`}
         >
-          <Send className="w-4 h-4" />
+          <Icon name="send" size={16} />
         </button>
       </form>
     </div>
   );
+}
+
+function messageText(message: Message) {
+  return message.line ? coachLines[message.line] : message.text;
 }

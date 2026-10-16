@@ -13,6 +13,11 @@ dist-ssr
 *.local
 .next/
 out/
+tsconfig.tsbuildinfo
+
+# Local knowledge graph and design-tool cache
+graphify-out
+.impeccable
 
 # Editor directories and files
 .vscode/*

@@ -1,25 +1,76 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity, Heart, Radio, Watch } from "lucide-react";
+import { Icon } from "@/components/icons/Icon";
 import { usePaceStore } from "@/lib/store";
+import { toggleRun } from "@/lib/runControls";
+import { formatDistance, formatPace, paceSuffix, unitLabel } from "@/lib/units";
 import { triggerHaptic } from "@/lib/haptics";
 
 export function DynamicIslandHUD() {
-  const { platform, runStatus, telemetry, setActiveTab, activeTab } = usePaceStore();
+  const { platform, runStatus, telemetry, activeTab, distanceUnit, isOnboarded } = usePaceStore();
+  const liveDistance = `${formatDistance(telemetry.distanceKm, distanceUnit)} ${unitLabel(distanceUnit)}`;
+  const livePace = formatPace(telemetry.pace, distanceUnit);
   const [expanded, setExpanded] = useState(false);
+  const [hintVisible, setHintVisible] = useState(false);
+  const platformRef = useRef(platform);
+  platformRef.current = platform;
 
   const isRunning = runStatus === "RUNNING" || runStatus === "PAUSED";
+  // The lenses stay on screen during setup. Live pace, expansion, and the tap hint wait.
+  const hudEnabled = isOnboarded;
+  const live = hudEnabled && isRunning;
+  const open = hudEnabled && expanded;
+  const lensesShown = !open && !live;
 
-  const handleIslandTap = () => {
+  // The island looks like a camera until it is tapped, so point at it once per
+  // onboarding. Resetting onboarding turns isOnboarded off and the hint returns.
+  useEffect(() => {
+    if (!isOnboarded || platformRef.current !== "ios") {
+      setHintVisible(false);
+      if (!isOnboarded) setExpanded(false);
+      return;
+    }
+    setHintVisible(true);
+    const timer = setTimeout(() => setHintVisible(false), 5000);
+    return () => clearTimeout(timer);
+  }, [isOnboarded]);
+
+  const handleIslandTap = (e: React.MouseEvent) => {
+    if (!hudEnabled) return;
+    if ((e.target as HTMLElement).closest("[data-island-control]")) return;
     triggerHaptic("medium");
+    setHintVisible(false);
     setExpanded((prev) => !prev);
+  };
+
+  const statusLine =
+    runStatus === "RUNNING"
+      ? "Pacific Coastal Loop"
+      : runStatus === "PAUSED"
+        ? "Paused"
+        : runStatus === "COUNTDOWN"
+          ? "Starting"
+          : "Ready";
+  const controlLabel =
+    runStatus === "RUNNING"
+      ? "Pause run"
+      : runStatus === "PAUSED"
+        ? "Resume run"
+        : runStatus === "COUNTDOWN"
+          ? "Cancel"
+          : "Start run";
+
+  const handleControl = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleRun();
   };
 
   // Android 15 Status Bar & Centered Punch-Hole Camera
   if (platform === "android") {
     return (
+      <>
       <div className="absolute top-2 left-0 right-0 z-50 flex items-center justify-between px-6 pointer-events-none h-7">
         {/* Left: Clock */}
         <span className="text-[13px] font-semibold tracking-tight text-white/90">
@@ -41,6 +92,15 @@ export function DynamicIslandHUD() {
           </div>
         </div>
       </div>
+      {live && activeTab === "run" && (
+        <div className="absolute top-14 right-4 z-50 h-7 px-2.5 rounded-lg bg-obsidian-card flex items-center gap-2 pointer-events-none">
+          <span className="text-[12px] font-semibold text-volt metric-mono">
+            {liveDistance}
+          </span>
+          <span className="text-[12px] text-white metric-mono">{livePace}</span>
+        </div>
+      )}
+      </>
     );
   }
 
@@ -51,7 +111,7 @@ export function DynamicIslandHUD() {
       <div className="absolute top-[2px] left-1/2 -translate-x-1/2 w-[46px] h-[2.5px] bg-[#141417] rounded-full border-b border-white/[0.06] z-50 pointer-events-none" />
 
       {/* iOS 18 Status Bar Flanking the Dynamic Island */}
-      <div className="relative z-40 flex items-center justify-between px-7 pt-[12px] text-[13px] font-semibold tracking-tight pointer-events-none">
+      <div className="relative z-50 flex items-center justify-between px-7 pt-[12px] text-[13px] font-semibold tracking-tight pointer-events-none">
         {/* Left: Time */}
         <span className="metric-mono tracking-tight font-semibold w-[54px] text-left text-white">
           9:41
@@ -82,126 +142,148 @@ export function DynamicIslandHUD() {
         </div>
       </div>
 
-      {/* Dynamic Island Morphing Container */}
-      <div className="absolute top-[9px] left-0 right-0 z-50 flex justify-center pointer-events-auto">
-        <motion.div
-          layout
-          onClick={handleIslandTap}
-          transition={{ type: "spring", stiffness: 420, damping: 32, mass: 0.8 }}
-          className={`relative bg-black cursor-pointer overflow-hidden shadow-[0_6px_24px_rgba(0,0,0,0.9),inset_0_0_0_0.75px_rgba(255,255,255,0.12)] transition-colors duration-200 ${
-            expanded
-              ? "w-[336px] h-[126px] rounded-[34px] p-4 border border-volt/30"
-              : isRunning
-              ? "w-[218px] h-[31px] rounded-full px-3 flex items-center justify-between"
-              : "w-[110px] h-[29px] rounded-full px-[11px] flex items-center justify-between"
-          }`}
-        >
-          {/* Physical Optical Hardware Lenses (Visible in Idle & subtly in Compact) */}
-          {!expanded && (
-            <div
-              className={`pointer-events-none absolute inset-x-0 top-0 h-full flex items-center justify-between px-[11px] transition-opacity duration-300 ${
-                isRunning ? "opacity-25" : "opacity-100"
-              }`}
-            >
-              {/* TrueDepth IR Dot Projector */}
-              <div
-                title="TrueDepth IR Sensor"
-                className="w-[10px] h-[10px] rounded-full bg-[radial-gradient(circle_at_50%_50%,#27121b_0%,#09090b_75%,#000_100%)] shadow-[inset_0_0_1.5px_rgba(255,255,255,0.14)]"
+      {/* First-run hint: a volt pulse on the island and a one-line caption under it */}
+      <AnimatePresence>
+        {hintVisible && !open && !live && (
+          <>
+            <div className="pointer-events-none absolute inset-x-0 top-[9px] z-[49] flex justify-center">
+              <motion.div
+                key="island-pulse"
+                aria-hidden
+                initial={{ opacity: 0.7, scale: 1 }}
+                animate={{ opacity: [0.7, 0], scale: [1, 1.22] }}
+                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: [0.23, 1, 0.32, 1] }}
+                className="h-[29px] w-[110px] rounded-2xl border-2 border-volt"
               />
-
-              {/* Sapphire Front Camera Lens with Anti-Reflective Coating */}
-              <div
-                title="Sapphire Lens"
-                className="w-[11px] h-[11px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#3b82f6_0%,#1e1b4b_38%,#050507_72%,#000_100%)] shadow-[inset_0_0_2px_rgba(255,255,255,0.35)] flex items-center justify-center relative"
-              >
-                <div className="w-[3px] h-[3px] rounded-full bg-sky-300/60 blur-[0.2px] -translate-x-[1px] -translate-y-[1px]" />
-              </div>
             </div>
-          )}
+            <motion.p
+              key="island-caption"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0, transition: { delay: 0.3, duration: 0.3 } }}
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              className="pointer-events-none absolute left-0 right-0 top-[46px] z-50 text-center text-[12px] font-medium text-white/80"
+            >
+              Tap the island
+            </motion.p>
+          </>
+        )}
+      </AnimatePresence>
 
-          <AnimatePresence mode="wait">
+      {/* Dynamic Island Morphing Container */}
+      <div className={`absolute top-[9px] left-0 right-0 z-50 flex justify-center ${hudEnabled ? "pointer-events-auto" : "pointer-events-none"}`}>
+        <motion.div
+          onClick={handleIslandTap}
+          initial={false}
+          animate={{
+            width: open ? 371 : live ? 218 : 110,
+            height: open ? 136 : live ? 31 : 29,
+            borderRadius: open ? 44 : 16,
+            paddingLeft: open ? 16 : 12,
+            paddingRight: open ? 20 : 12,
+            paddingTop: open ? 12 : 0,
+            paddingBottom: open ? 16 : 0,
+          }}
+          transition={{ type: "spring", stiffness: open ? 340 : 220, damping: open ? 32 : 26, mass: 0.9 }}
+          className={`relative flex items-center bg-black overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.6)] ${hudEnabled ? "cursor-pointer" : ""}`}
+        >
+          {/* Idle hardware lenses. They fade out fast when the island grows, so pace stays readable,
+              and return once it has nearly settled. */}
+          <motion.div
+            initial={false}
+            animate={{ opacity: lensesShown ? 1 : 0 }}
+            transition={{ duration: lensesShown ? 0.18 : 0.1, delay: lensesShown ? 0.18 : 0 }}
+            className="pointer-events-none absolute inset-x-0 top-0 h-full flex items-center justify-between px-[11px]"
+          >
+            {/* TrueDepth IR Dot Projector */}
+            <div
+              title="TrueDepth IR Sensor"
+              className="w-[10px] h-[10px] rounded-full bg-[radial-gradient(circle_at_50%_50%,#27121b_0%,#09090b_75%,#000_100%)] shadow-[inset_0_0_1.5px_rgba(255,255,255,0.14)]"
+            />
+
+            {/* Sapphire Front Camera Lens with Anti-Reflective Coating */}
+            <div
+              title="Sapphire Lens"
+              className="w-[11px] h-[11px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#3b82f6_0%,#1e1b4b_38%,#050507_72%,#000_100%)] shadow-[inset_0_0_2px_rgba(255,255,255,0.35)] flex items-center justify-center relative"
+            >
+              <div className="w-[3px] h-[3px] rounded-full bg-sky-300/60 blur-[0.2px] -translate-x-[1px] -translate-y-[1px]" />
+            </div>
+          </motion.div>
+
+          <AnimatePresence initial={false}>
             {/* STATE 1: EXPANDED TELEMETRY HUD */}
-            {expanded ? (
+            {open ? (
               <motion.div
                 key="expanded"
-                initial={{ opacity: 0, scale: 0.94 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.94 }}
-                transition={{ duration: 0.18 }}
-                className="flex flex-col justify-between h-full w-full select-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                transition={{ duration: 0.22, delay: 0.06 }}
+                className="absolute inset-x-4 top-3 bottom-4 flex flex-col justify-between select-none"
               >
-                <div className="flex items-center justify-between">
+                {/* Leading and trailing regions flank the camera, as in a real expanded Live Activity */}
+                <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-volt text-black font-black text-[10px] flex items-center justify-center shadow-sm">
-                      P
+                    <span className="w-8 h-8 rounded-full bg-volt text-black flex items-center justify-center">
+                      <Icon name="runner" size={18} />
                     </span>
-                    <div className="leading-none">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-volt">
-                        PACE Live Telemetry
-                      </p>
-                      <p className="text-[10px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                        <Watch className="w-2.5 h-2.5 text-volt" /> Apple Watch Ultra · Synced
-                      </p>
+                    <div className="leading-tight">
+                      <p className="text-[13px] font-semibold text-white">Outdoor Run</p>
+                      <p className="text-[11px] text-white/45">{statusLine}</p>
                     </div>
+                  </div>
+                  <p
+                    className={`text-[24px] leading-8 font-semibold metric-mono ${
+                      runStatus === "PAUSED" ? "text-white/45" : "text-volt"
+                    }`}
+                  >
+                    {formatElapsed(telemetry.durationSec)}
+                  </p>
+                </div>
+
+                <div className="flex items-end justify-between">
+                  <div className="flex items-baseline gap-4">
+                    <p className="text-[22px] leading-none font-semibold text-white metric-mono">
+                      {formatDistance(telemetry.distanceKm, distanceUnit)}
+                      <span className="ml-0.5 text-[12px] font-medium text-white/45">{unitLabel(distanceUnit)}</span>
+                    </p>
+                    <p className="text-[22px] leading-none font-semibold text-white metric-mono">
+                      {livePace}
+                      <span className="ml-0.5 text-[12px] font-medium text-white/45">{paceSuffix(distanceUnit)}</span>
+                    </p>
+                    <p className="text-[22px] leading-none font-semibold text-infrared metric-mono flex items-baseline">
+                      {telemetry.heartRate}
+                      <Icon name="heart" size={11} className="ml-1 text-infrared self-center" />
+                    </p>
                   </div>
 
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpanded(false);
-                      setActiveTab("run");
-                    }}
-                    className="px-2.5 py-1 rounded-full bg-volt text-black text-[10px] font-extrabold tracking-tight active:scale-95 transition-transform"
+                    type="button"
+                    data-island-control
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={handleControl}
+                    aria-label={controlLabel}
+                    className="w-11 h-11 shrink-0 rounded-full bg-volt/20 text-volt flex items-center justify-center active:scale-90 transition-transform"
                   >
-                    Open Run
+                    <Icon name={runStatus === "RUNNING" ? "pause" : "play"} size={18} />
                   </button>
                 </div>
-
-                <div className="grid grid-cols-3 gap-2 pt-2.5 border-t border-white/10">
-                  <div>
-                    <span className="text-[9px] uppercase tracking-wider text-zinc-400 block">
-                      Distance
-                    </span>
-                    <span className="text-base font-extrabold text-white metric-mono">
-                      {telemetry.distanceKm.toFixed(2)}{" "}
-                      <small className="text-[10px] font-normal text-zinc-400">km</small>
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] uppercase tracking-wider text-zinc-400 block">
-                      Current Pace
-                    </span>
-                    <span className="text-base font-extrabold text-volt metric-mono">
-                      {telemetry.pace}{" "}
-                      <small className="text-[10px] font-normal text-zinc-400">/km</small>
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[9px] uppercase tracking-wider text-zinc-400 block">
-                      Heart Rate
-                    </span>
-                    <span className="text-base font-extrabold text-infrared metric-mono inline-flex items-center gap-1 justify-end">
-                      <Heart className="w-3.5 h-3.5 fill-[#FF3B30]" />
-                      {telemetry.heartRate}
-                    </span>
-                  </div>
-                </div>
               </motion.div>
-            ) : isRunning ? (
+            ) : live ? (
               /* STATE 2: COMPACT LIVE ACTIVITY PILL */
               <motion.div
                 key="compact"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="w-full flex items-center justify-between text-[11px] z-10 px-0.5 select-none"
+                animate={{ opacity: 1, transition: { duration: 0.22, delay: 0.16 } }}
+                exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                className="flex h-full w-full items-center justify-between text-[11px] z-10 select-none"
               >
                 <span className="flex items-center gap-1.5 font-bold text-volt metric-mono">
-                  <Activity className="w-3 h-3 text-volt animate-pulse" />
-                  {telemetry.distanceKm.toFixed(2)} km
+                  <Icon name="pulse" size={12} className="text-volt" />
+                  {liveDistance}
                 </span>
-                <span className="font-mono font-semibold text-white metric-mono text-[10.5px]">
-                  {telemetry.pace}/km
+                <span className="font-semibold text-white metric-mono text-[11px]">
+                  {livePace}{paceSuffix(distanceUnit)}
                 </span>
               </motion.div>
             ) : null}
@@ -210,4 +292,12 @@ export function DynamicIslandHUD() {
       </div>
     </>
   );
+}
+
+function formatElapsed(totalSec: number) {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = Math.floor(totalSec % 60);
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
