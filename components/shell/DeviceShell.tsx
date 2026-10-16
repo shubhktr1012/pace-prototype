@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore, PlatformType } from "@/lib/store";
 import { haptics } from "@/lib/haptics";
 import { DynamicIslandHUD } from "./DynamicIslandHUD";
@@ -131,8 +131,62 @@ export function DeviceShell({ children }: DeviceShellProps) {
               width: isMobileScreen ? "100%" : "393px",
               height: isMobileScreen ? "100dvh" : "852px",
             }}
-            className="flex items-center justify-center flex-shrink-0"
+            className="relative flex items-center justify-center flex-shrink-0"
           >
+            {/* PHYSICAL HARDWARE BUTTONS (Desktop Mode Only) */}
+            {!isMobileScreen && platform === "ios" && (
+              <>
+                {/* Action Button (Left Up 1) */}
+                <div
+                  title="Action Button"
+                  className="absolute -left-[14px] top-[135px] w-[5px] h-[32px] bg-[#35363C] rounded-l-[3px] border-l border-t border-b border-white/20 shadow-[-2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                />
+
+                {/* Volume Up Button (Left Up 2) */}
+                <div
+                  title="Volume Up"
+                  className="absolute -left-[14px] top-[185px] w-[5px] h-[64px] bg-[#35363C] rounded-l-[3px] border-l border-t border-b border-white/20 shadow-[-2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                />
+
+                {/* Volume Down Button (Left Down) */}
+                <div
+                  title="Volume Down"
+                  className="absolute -left-[14px] top-[260px] w-[5px] h-[64px] bg-[#35363C] rounded-l-[3px] border-l border-t border-b border-white/20 shadow-[-2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                />
+
+                {/* Power / Side Button (Right Power) */}
+                <div
+                  title="Power / Siri Button"
+                  className="absolute -right-[14px] top-[205px] w-[5px] h-[92px] bg-[#35363C] rounded-r-[3px] border-r border-t border-b border-white/20 shadow-[2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                />
+
+                {/* iPhone 16 Sapphire Glass Camera Control Button (Right Down) */}
+                <div
+                  title="Camera Control Button (Capacitive & Force-sensitive)"
+                  className="absolute -right-[13px] top-[330px] w-[4px] h-[52px] bg-[#292A30] rounded-r-[2px] border-r border-t border-b border-white/15 shadow-[1px_0_3px_rgba(0,0,0,0.6)] opacity-95 z-10 flex items-center justify-center"
+                >
+                  <div className="w-[1px] h-[36px] bg-white/10 rounded-full" />
+                </div>
+              </>
+            )}
+
+            {!isMobileScreen && platform === "android" && (
+              <>
+                {/* Pixel 9 Pro Power Button (Right Top) */}
+                <div
+                  title="Power Button"
+                  className="absolute -right-[13px] top-[180px] w-[5px] h-[44px] bg-[#2E3036] rounded-r-[3px] border-r border-t border-b border-white/20 shadow-[2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                />
+
+                {/* Pixel 9 Pro Volume Rocker (Right Middle) */}
+                <div
+                  title="Volume Rocker"
+                  className="absolute -right-[13px] top-[240px] w-[5px] h-[96px] bg-[#2E3036] rounded-r-[3px] border-r border-t border-b border-white/20 shadow-[2px_0_5px_rgba(0,0,0,0.8)] z-10"
+                />
+              </>
+            )}
+
+            {/* Main Phone Screen & Bezel */}
             <motion.div
               layout
               transition={{
@@ -144,8 +198,8 @@ export function DeviceShell({ children }: DeviceShellProps) {
                 isMobileScreen
                   ? "rounded-none border-none ring-0 shadow-none"
                   : platform === "ios"
-                  ? "rounded-[54px] ring-[11px] ring-[#1E2024] border-[3px] border-[#383A40] shadow-chassis-ios"
-                  : "rounded-[42px] ring-[10px] ring-[#15161A] border-[2px] border-[#2C2D33] shadow-chassis-android"
+                  ? "rounded-[54px] ring-[10px] ring-[#1E2025] border-[3px] border-[#3E4048] shadow-[0_0_0_4px_#2B2C32,0_30px_70px_-15px_rgba(0,0,0,0.9),inset_0_0_12px_rgba(255,255,255,0.06)]"
+                  : "rounded-[42px] ring-[10px] ring-[#15161A] border-[2px] border-[#2C2D33] shadow-[0_0_0_3px_#23242A,0_30px_70px_-15px_rgba(0,0,0,0.9),inset_0_0_8px_rgba(255,255,255,0.04)]"
               } bg-[#07080A]`}
             >
               {/* Status Bar & Dynamic Island */}
