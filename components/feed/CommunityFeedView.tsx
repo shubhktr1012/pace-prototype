@@ -11,7 +11,7 @@ import { DEFAULT_ROUTE, LOOP_FINISH_KM, coveredLine } from "@/components/run/cou
 import { RouteTrack } from "@/components/run/RouteTrack";
 
 const BOARD = [
-  { rank: "1", name: "Marco Izurieta", km: 48.6, you: true },
+  { rank: "1", name: "Alex Rivera", km: 48.6, you: true },
   { rank: "2", name: "Sarah Jenkins", km: 42.1, you: false },
   { rank: "3", name: "David Chen", km: 39.8, you: false },
 ];
@@ -69,15 +69,15 @@ export function CommunityFeedView() {
       <article className={ios ? "" : "rounded-[24px] bg-obsidian-sheet p-4"}>
         <div className="flex items-center gap-3">
           <img
-            src="/media/marco.jpg"
+            src="/media/runner-portrait.jpg"
             alt=""
             className={`w-10 h-10 object-cover object-[center_18%] ${ios ? "rounded-full" : "rounded-xl"}`}
           />
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-semibold leading-tight">Marco Izurieta</p>
+            <p className="text-[15px] font-semibold leading-tight">Alex Rivera</p>
             <p className="text-[12px] text-white/40">Today · San Francisco</p>
           </div>
-          <span className="text-[11px] font-semibold text-volt">Founder</span>
+          <span className="text-[11px] font-semibold text-volt">Club Leader</span>
         </div>
 
         <h3 className="mt-3 text-[17px] font-semibold tracking-tight">

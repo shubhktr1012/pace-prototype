@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "PACE · All-In-One Running Platform",
   description:
-    "Combines Strava GPS tracking and community features with Runna personalized training plans and adaptive AI coaching for Marco Izurieta.",
+    "Combines Strava GPS tracking and community features with Runna personalized training plans and adaptive AI coaching.",
   icons: {
     icon: "/favicon.svg",
   },

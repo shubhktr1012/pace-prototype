@@ -18,7 +18,7 @@ interface DeviceShellProps {
 const TOUR: { id: TabType; label: string; icon: IconName; hint: string }[] = [
   { id: "run", label: "Record", icon: "shoe", hint: "The map of the run. Tap Simulate 5K to watch it play." },
   { id: "coach", label: "Coach", icon: "chat", hint: "Today's workout. Tap My calves are tight and it changes." },
-  { id: "feed", label: "Club", icon: "club", hint: "Marco's run is first. Tap the heart to give kudos." },
+  { id: "feed", label: "Club", icon: "club", hint: "Recent community runs. Tap the heart to give kudos." },
   { id: "profile", label: "You", icon: "medal", hint: "This week's miles, your best times, and your shoes." },
 ];
 
@@ -145,7 +145,7 @@ export function DeviceShell({ children }: DeviceShellProps) {
           Track the run. Let the coach plan the next one.
         </p>
         <p className="mt-4 max-w-[26em] text-[15px] leading-6 text-white/55">
-          Prepared for Marco Izurieta.{" "}
+          An interactive preview of PACE.{" "}
           {isOnboarded
             ? "Tap a row and that screen opens on the phone."
             : "Finish the welcome on the phone, then tap a row to open that screen."}

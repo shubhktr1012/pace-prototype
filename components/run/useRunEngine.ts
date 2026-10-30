@@ -106,8 +106,8 @@ export function useRunEngine() {
         sound.playFinishChime();
         sound.speak(
           Math.abs(limit - 5.24) < 0.05
-            ? "Workout complete Marco. Excellent 5K pace."
-            : "Workout complete Marco. Route finished."
+            ? "Workout complete. Excellent 5K pace."
+            : "Workout complete. Route finished."
         );
 
         try {
@@ -182,7 +182,7 @@ export function useRunEngine() {
     triggerHaptic("success");
     sound.playFinishChime();
     sound.speak(
-      `Workout complete Marco. ${formatDistance(telemetry.distanceKm, distanceUnit)} ${distanceUnit === "mi" ? "miles" : "kilometers"} recorded.`
+      `Workout complete. ${formatDistance(telemetry.distanceKm, distanceUnit)} ${distanceUnit === "mi" ? "miles" : "kilometers"} recorded.`
     );
     setRunStatus("FINISHED");
 

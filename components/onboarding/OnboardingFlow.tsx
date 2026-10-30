@@ -111,11 +111,11 @@ export function OnboardingGate() {
                 className={`relative flex h-12 w-full items-center justify-center ${radius} bg-volt text-[15px] font-semibold text-black`}
               >
                 <img
-                  src="/media/marco.jpg"
+                  src="/media/runner-portrait.jpg"
                   alt=""
-                  className={`absolute left-2 h-8 w-8 object-cover object-[center_18%] ${ios ? "rounded-full" : "rounded-xl"}`}
+                  className={`absolute left-2 h-8 w-8 object-cover ${ios ? "rounded-full" : "rounded-xl"}`}
                 />
-                Continue as Marco
+                Continue to Demo
               </button>
               <button
                 onClick={() => {
@@ -124,7 +124,7 @@ export function OnboardingGate() {
                 }}
                 className="h-11 w-full text-[14px] text-white/70"
               >
-                Answer 3 questions
+                Onboard Next
               </button>
             </div>
           </div>
@@ -195,7 +195,7 @@ export function OnboardingGate() {
               </div>
               {step === 2 && picks[2] && (
                 <p className="mt-4 text-[13px] leading-relaxed text-white/50">
-                  {picks.filter(Boolean).join(", ")}. This preview opens Marco&apos;s half marathon week.
+                  {picks.filter(Boolean).join(", ")}. This preview opens your half marathon week.
                 </p>
               )}
             </motion.div>
