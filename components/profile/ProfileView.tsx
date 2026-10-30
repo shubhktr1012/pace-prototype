@@ -24,9 +24,9 @@ export function ProfileView() {
     <div className="flex flex-col gap-6">
       <header className="flex items-center gap-3">
         <img
-          src="/media/runner-portrait.jpg"
+          src="/media/avatar.jpg"
           alt="Alex Rivera"
-          className={`w-14 h-14 object-cover object-[center_18%] ${ios ? "rounded-full" : "rounded-2xl"}`}
+          className={`w-14 h-14 object-cover ${ios ? "rounded-full" : "rounded-2xl"}`}
         />
         <div>
           <h2 className={`font-semibold tracking-tight leading-tight ${ios ? "text-[28px]" : "text-[22px]"}`}>

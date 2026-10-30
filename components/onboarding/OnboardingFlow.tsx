@@ -111,7 +111,7 @@ export function OnboardingGate() {
                 className={`relative flex h-12 w-full items-center justify-center ${radius} bg-volt text-[15px] font-semibold text-black`}
               >
                 <img
-                  src="/media/runner-portrait.jpg"
+                  src="/media/avatar.jpg"
                   alt=""
                   className={`absolute left-2 h-8 w-8 object-cover ${ios ? "rounded-full" : "rounded-xl"}`}
                 />

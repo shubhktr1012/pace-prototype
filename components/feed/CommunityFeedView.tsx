@@ -69,9 +69,9 @@ export function CommunityFeedView() {
       <article className={ios ? "" : "rounded-[24px] bg-obsidian-sheet p-4"}>
         <div className="flex items-center gap-3">
           <img
-            src="/media/runner-portrait.jpg"
+            src="/media/avatar.jpg"
             alt=""
-            className={`w-10 h-10 object-cover object-[center_18%] ${ios ? "rounded-full" : "rounded-xl"}`}
+            className={`w-10 h-10 object-cover ${ios ? "rounded-full" : "rounded-xl"}`}
           />
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-semibold leading-tight">Alex Rivera</p>
