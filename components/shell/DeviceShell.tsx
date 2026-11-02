@@ -10,6 +10,7 @@ import { BottomNav } from "./BottomNav";
 import { OnboardingGate } from "@/components/onboarding/OnboardingFlow";
 import { ShellPortalProvider } from "./ShellPortal";
 import { Icon, IconName } from "@/components/icons/Icon";
+import { DeveloperMenu } from "./DeveloperMenu";
 
 interface DeviceShellProps {
   children: React.ReactNode;
@@ -314,30 +315,8 @@ export function DeviceShell({ children }: DeviceShellProps) {
       </main>
       </div>
 
-      {/* Global Apple-style Colophon (Bottom-left anchor on wide screens) */}
-      <footer className="hidden lg:flex fixed bottom-6 left-10 z-30 items-center gap-2 text-[12px] text-white/35">
-        <span>
-          Built by <span className="font-medium text-white/65">Shubh&nbsp;Khatri</span>
-        </span>
-        <span className="text-white/20 select-none" aria-hidden="true">·</span>
-        <a
-          href="https://github.com/shubhktr1012"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`transition-colors hover:text-white hover:underline underline-offset-2 ${FOCUS_RING} rounded-sm`}
-        >
-          GitHub
-        </a>
-        <span className="text-white/20 select-none" aria-hidden="true">·</span>
-        <a
-          href="https://www.linkedin.com/in/shubhkhatri1209/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`transition-colors hover:text-white hover:underline underline-offset-2 ${FOCUS_RING} rounded-sm`}
-        >
-          LinkedIn
-        </a>
-      </footer>
+      {/* Floating Developer Information Menu (Bottom-Right) */}
+      <DeveloperMenu />
     </div>
     </MotionConfig>
   );
