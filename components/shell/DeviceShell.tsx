@@ -96,9 +96,12 @@ export function DeviceShell({ children }: DeviceShellProps) {
 
       // Wide screens put the guide rail beside the phone, so the phone gets
       // the full height. Mid widths keep a slim top bar and no rail.
+      // Account for the bottom attribution footer (48px) so the phone never overlaps it.
       const sideButtons = 36;
       const wide = width >= 1024;
-      const availableH = wide ? height - 56 : height - 88;
+      const footerH = 48;
+      const headerH = wide ? 0 : 64;
+      const availableH = height - (headerH + footerH + (wide ? 48 : 32));
       const availableW = wide ? width - (340 + 96 + 96) : width - 32;
       const scaleH = availableH / 860;
       const scaleW = availableW / (393 + sideButtons);
@@ -314,8 +317,8 @@ export function DeviceShell({ children }: DeviceShellProps) {
       </main>
       </div>
 
-      {/* Developer Attribution (Bottom-Right) */}
-      <footer className="hidden lg:flex fixed bottom-6 right-8 z-30 items-center gap-2.5 text-[12px] text-white/40 select-none">
+      {/* Developer Attribution (Bottom-Right, in-flow footer so it never overlaps the phone chassis) */}
+      <footer className="hidden md:flex h-12 w-full flex-shrink-0 items-center justify-end gap-2.5 px-8 z-30 text-[12px] text-white/40 select-none">
         <span>
           Developed by <span className="font-medium text-white/75">Shubh&nbsp;Khatri</span>
         </span>
