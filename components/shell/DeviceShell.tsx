@@ -192,6 +192,30 @@ export function DeviceShell({ children }: DeviceShellProps) {
           <span className="text-[13px] text-white/50">Preview on</span>
           <DeviceSwitch platform={platform} onChange={handlePlatformSwitch} />
         </div>
+
+        <div className="mt-6 flex items-center gap-2 text-[12px] text-white/40">
+          <span>
+            Built by <span className="font-medium text-white/70">Shubh Khatri</span>
+          </span>
+          <span className="text-white/20 select-none">·</span>
+          <a
+            href="https://github.com/shubhktr1012"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-white hover:underline underline-offset-2"
+          >
+            GitHub
+          </a>
+          <span className="text-white/20 select-none">·</span>
+          <a
+            href="https://www.linkedin.com/in/shubhkhatri1209/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-white hover:underline underline-offset-2"
+          >
+            LinkedIn
+          </a>
+        </div>
       </aside>
 
       {/* Main Hardware Chassis Container with Outer Scaling Wrapper */}
