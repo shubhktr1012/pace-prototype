@@ -192,30 +192,6 @@ export function DeviceShell({ children }: DeviceShellProps) {
           <span className="text-[13px] text-white/50">Preview on</span>
           <DeviceSwitch platform={platform} onChange={handlePlatformSwitch} />
         </div>
-
-        <div className="mt-6 flex items-center gap-2 text-[12px] text-white/40">
-          <span>
-            Built by <span className="font-medium text-white/70">Shubh Khatri</span>
-          </span>
-          <span className="text-white/20 select-none">·</span>
-          <a
-            href="https://github.com/shubhktr1012"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transition-colors hover:text-white hover:underline underline-offset-2"
-          >
-            GitHub
-          </a>
-          <span className="text-white/20 select-none">·</span>
-          <a
-            href="https://www.linkedin.com/in/shubhkhatri1209/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transition-colors hover:text-white hover:underline underline-offset-2"
-          >
-            LinkedIn
-          </a>
-        </div>
       </aside>
 
       {/* Main Hardware Chassis Container with Outer Scaling Wrapper */}
@@ -337,6 +313,31 @@ export function DeviceShell({ children }: DeviceShellProps) {
         </div>
       </main>
       </div>
+
+      {/* Global Apple-style Colophon (Bottom-left anchor on wide screens) */}
+      <footer className="hidden lg:flex fixed bottom-6 left-10 z-30 items-center gap-2 text-[12px] text-white/35">
+        <span>
+          Built by <span className="font-medium text-white/65">Shubh&nbsp;Khatri</span>
+        </span>
+        <span className="text-white/20 select-none" aria-hidden="true">·</span>
+        <a
+          href="https://github.com/shubhktr1012"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`transition-colors hover:text-white hover:underline underline-offset-2 ${FOCUS_RING} rounded-sm`}
+        >
+          GitHub
+        </a>
+        <span className="text-white/20 select-none" aria-hidden="true">·</span>
+        <a
+          href="https://www.linkedin.com/in/shubhkhatri1209/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`transition-colors hover:text-white hover:underline underline-offset-2 ${FOCUS_RING} rounded-sm`}
+        >
+          LinkedIn
+        </a>
+      </footer>
     </div>
     </MotionConfig>
   );
